@@ -446,14 +446,16 @@ setup_stack (void **esp, const char * file_name)
       if (success){
         *esp = PHYS_BASE - 12; //setup stack pointer
 
+        int argc = 0;
+
     	//Push arguments onto stack here
-        /*char s[40] = file_name;
+        char *s = file_name;
         char * token, *save_ptr;
         for (token = strtok_r (s, " ", &save_ptr); token != NULL;
         token = strtok_r (NULL, " ", &save_ptr)){
      	
-
-     	}*/
+        	++argc;
+     	}
 
     }
 

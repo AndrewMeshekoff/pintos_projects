@@ -30,12 +30,6 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  const char * s = file_name;
-  char *token, *save_ptr;
-  char * name;
-
-  token = strtok_r (s, " ", &save_ptr); 
-  name = token; 
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -444,17 +438,44 @@ setup_stack (void **esp, const char * file_name)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success){
-        *esp = PHYS_BASE - 12; //setup stack pointer
+        *esp = PHYS_BASE; //setup stack pointer
 
-    	//Push arguments onto stack here
-        /*char s[40] = file_name;
+	void * argpt = *esp;
+        char s[128] = file_name;
+	char * args[40];
         char * token, *save_ptr;
+	int size = 0;
         for (token = strtok_r (s, " ", &save_ptr); token != NULL;
         token = strtok_r (NULL, " ", &save_ptr)){
-     	
-
-     	}*/
-
+     		args[size++] = token
+     	}
+	int i;
+	int len;
+	for (i = size-1; i>=0; i++) {
+		len = strlen(args[i]);
+		argpt -= len + 1;
+		strlcpy ((char *) argpt, args[i], len);
+		args[i] = (char *) argpt;
+	}
+	while (!argpt % 4)
+		argpt--;
+	argpt -= 4;
+	*(char *) argpt = (char *) NULL;
+	for (i = size-1; i>=0; i++) {
+		argpt -= 4;
+		memcpy (argpt, args+i, 4);
+	}
+	char ** argv = (char **) argpt;
+	argpt -= 4;
+	memcpy (argpt, &argv, 4);
+	argpt -= 4;
+	memcpy (argpt, &size, 4);
+	void * ret = (void *) 0;
+	argpt -= 4;
+	memcpy (argpt, &ret, 4);
+	
+	
+	
     }
 
 

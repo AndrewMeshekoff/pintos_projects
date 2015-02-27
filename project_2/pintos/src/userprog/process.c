@@ -433,38 +433,44 @@ setup_stack (void **esp, const char * file_name)
   uint8_t *kpage;
   bool success = false;
 
+  char *s = file_name;
+  char * args[40];
+  char * token, *save_ptr;
+  int size = 0;
+  int totalChars = 0;
+
+  for (token = strtok_r (s, " ", &save_ptr); token != NULL;
+  token = strtok_r (NULL, " ", &save_ptr)) {
+    args[size] = token;
+    totalChars = strlen(args[size++]) + 1;
+  }
+	
+  int argSize = totalChars + size * 4 + 16;
+
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
     {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success){
+      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
+      if (success) {
         *esp = PHYS_BASE; //setup stack pointer
 
 	void * argpt = *esp;
-        char s[128] = file_name;
-	char * args[40];
-        char * token, *save_ptr;
-	int size = 0;
 
-        for (token = strtok_r (s, " ", &save_ptr); token != NULL;
-        token = strtok_r (NULL, " ", &save_ptr)){
-     		args[size++] = token
-     	}
 	int i;
 	int len;
 	for (i = size-1; i>=0; i++) {
-		len = strlen(args[i]);
-		argpt -= len + 1;
-		strlcpy ((char *) argpt, args[i], len);
-		args[i] = (char *) argpt;
+	  len = strlen(args[i]);
+	  argpt -= len + 1;
+	  strlcpy ((char *) argpt, args[i], len);
+	  args[i] = (char *) argpt;
 	}
 	while (!argpt % 4)
-		argpt--;
+	  argpt--;
 	argpt -= 4;
 	*(char *) argpt = (char *) NULL;
 	for (i = size-1; i>=0; i++) {
-		argpt -= 4;
-		memcpy (argpt, args+i, 4);
+	  argpt -= 4;
+	  memcpy (argpt, args+i, 4);
 	}
 	char ** argv = (char **) argpt;
 	argpt -= 4;
@@ -475,9 +481,6 @@ setup_stack (void **esp, const char * file_name)
 	argpt -= 4;
 	memcpy (argpt, &ret, 4);
       }
-    }
-
-
       else
         palloc_free_page (kpage);
     }

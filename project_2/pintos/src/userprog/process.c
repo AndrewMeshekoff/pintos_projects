@@ -445,6 +445,7 @@ setup_stack (void **esp, const char * file_name)
 	char * args[40];
         char * token, *save_ptr;
 	int size = 0;
+
         for (token = strtok_r (s, " ", &save_ptr); token != NULL;
         token = strtok_r (NULL, " ", &save_ptr)){
      		args[size++] = token
@@ -473,9 +474,7 @@ setup_stack (void **esp, const char * file_name)
 	void * ret = (void *) 0;
 	argpt -= 4;
 	memcpy (argpt, &ret, 4);
-	
-	
-	
+      }
     }
 
 

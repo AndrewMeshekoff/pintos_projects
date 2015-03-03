@@ -14,6 +14,8 @@ main (int argc, char *argv[])
 
   msg ("begin");
   msg ("argc = %d", argc);
+  msg("ARG FOUND\n");
+
   for (i = 0; i <= argc; i++)
     if (argv[i] != NULL)
       msg ("argv[%d] = '%s'", i, argv[i]);

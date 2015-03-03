@@ -15,6 +15,12 @@
 #include "userprog/process.h"
 #endif
 
+
+
+
+
+
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -468,6 +474,8 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  list_init (&t->children);
+
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
 }
@@ -585,3 +593,23 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+
+
+//adds child to current running thread and pushes onto child list of currently running thread.
+static struct child_process * add_child_to_parent (int pid){
+
+
+
+}
+
+static struct child_process* get_child(int pid){
+
+}
+
+static void remove_child (struct child_process *cp){
+
+}
+static void remove_all_child_processes (void){
+
+}

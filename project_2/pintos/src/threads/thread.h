@@ -90,7 +90,7 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
-    struct list children;
+    struct list child_list;
     struct list_elem child_elem;
 
     /* Shared between thread.c and synch.c. */
@@ -144,23 +144,16 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-struct child_thread
-{
-  tid_t pid;
-  int status;
-  struct list_elem child_elem;
-  //struct lock child_lock;
-
-  bool wait;
-  bool exit;
-
-};
 
 
-static struct child_process * add_child_to_parent (int pid);
-static struct child_process* get_child(int pid);
+
+
+
+
+/*static struct child_process * add_child_to_cur_parent (int pid);
+static struct child_process * get_child(int pid);
 static void remove_child (struct child_process *cp);
-static void remove_all_child_processes (void);
+static void remove_all_cur_children (void);*/
 
 
 #endif /* threads/thread.h */

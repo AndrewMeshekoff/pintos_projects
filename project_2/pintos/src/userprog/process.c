@@ -19,6 +19,7 @@
 #include "threads/vaddr.h"
 
 
+
 //Gonna use later after children implementation is done
 /* Find a child of the current thread that matches the given tid. Return NULL if
 /*   not found */
@@ -568,3 +569,77 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
+
+
+/*Child_Process Status DEFINES*/
+
+#define C_WAIT 0
+#define C_EXIT 1
+#define UNDEFINED -1
+/*Load Status ?? */
+
+struct child_process
+{
+  tid_t pid;
+  int p_status;
+  struct list_elem child_elem;
+  struct lock child_lock;
+};
+
+
+//adds child to current running thread and pushes onto child list of currently running thread.
+static struct child_process * add_child_to_cur_parent (int pid){
+
+  struct child_process* cp = malloc(sizeof(struct child_process));
+  cp->pid = pid;
+  cp->p_status = UNDEFINED;
+  lock_init(&cp->child_lock);
+  list_push_back(&thread_current()->child_list, &cp->child_elem);
+
+  return cp;
+
+
+}
+
+static struct child_process* get_child(int pid){
+
+  struct thread *t = thread_current();
+  struct list_elem *e;
+
+  for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next (e))
+  {
+      struct child_process *cp = list_entry (e, struct child_process, child_elem);
+      if (pid == cp->pid)
+      {
+          return cp;
+      }
+  }
+
+  printf("PID NOT FOUND!\n" );
+  return NULL;
+}
+
+static void remove_child (struct child_process *cp){
+
+  list_remove(&cp->child_elem);
+  free(cp);
+
+
+}
+static void remove_all_cur_children (void){
+
+  struct thread * t = thread_current();
+  struct list_elem *e;
+  struct list_elem *next;
+  while( e != list_end( &t->child_list) ){
+
+      next = list_next(e);
+      struct child_process *cp = list_entry (e, struct child_process, child_elem);
+      list_remove(&cp->child_elem);
+      free(cp);
+      e = next;
+  }
+
+}
+

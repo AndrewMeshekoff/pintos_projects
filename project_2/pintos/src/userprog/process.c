@@ -534,11 +534,10 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
   char *save_ptr = input_save_ptr;
   int size = 0;
   int totalChars = 0;
-  int argc = 0;
 
   for (token = cmd_line; token != NULL;
   token = strtok_r (NULL, " ", &save_ptr)) {
-    args[size++] = token;
+    args[size] = token;
     totalChars = strlen(args[size++]) + 1;
   }
 	

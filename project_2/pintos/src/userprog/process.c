@@ -538,18 +538,18 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 
   for (token = cmd_line; token != NULL;
   token = strtok_r (NULL, " ", &save_ptr)) {
-    argv[size] = token;
-    totalChars = strlen(argv[size++]) + 1;
+    args[size++] = token;
+    totalChars = strlen(args[size++]) + 1;
   }
 	
 
 
-  int argvize = totalChars + size * 4 + 16;
+  int argSize = totalChars + size * 4 + 16;
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
   {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argvize < 4000;
+      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
       if (success) {
         *esp = PHYS_BASE; //setup stack pointer
 

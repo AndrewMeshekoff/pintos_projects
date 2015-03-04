@@ -21,26 +21,6 @@
 
 
 
-//Gonna use later after children implementation is done
-/* Find a child of the current thread that matches the given tid. Return NULL if
-/*   not found */
-/*struct thread *
-thread_return_child (tid_t tid)
-{
-  struct list_elem *e;
-
-  for (e = list_begin (&thread_current()->children); e != list_end (&thread_current()->children);
-           e = list_next (e))
-  {
-          struct thread *c = list_entry (e, struct thread, childelem);
-          
-          if (c->tid == tid)
-            return c;
-  }
-
-  return NULL;
-}*/
-
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);

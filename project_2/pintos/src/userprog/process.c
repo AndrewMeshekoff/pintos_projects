@@ -19,6 +19,28 @@
 #include "threads/vaddr.h"
 #include "threads/synch.h"
 
+
+//Gonna use later after children implementation is done
+/* Find a child of the current thread that matches the given tid. Return NULL if
+/*   not found */
+/*struct thread *
+thread_return_child (tid_t tid)
+{
+  struct list_elem *e;
+
+  for (e = list_begin (&thread_current()->children); e != list_end (&thread_current()->children);
+           e = list_next (e))
+  {
+          struct thread *c = list_entry (e, struct thread, childelem);
+          
+          if (c->tid == tid)
+            return c;
+  }
+
+  return NULL;
+}*/
+
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -28,9 +50,9 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 struct exec_helper 
 {
     const char *file_name;
-    struct semaphore load_sema;//##Add semaphore for loading (for resource race cases!)
-    bool loaded;//##Add bool for determining if program loaded successfully
-    //## Add other stuff you need to transfer between process_execute and process_start (hint, think of the children... need a way to add to the child's list, wee below about thread's child list.)
+    struct semaphore load_sema;//Add semaphore for loading (for resource race cases!)
+    bool loaded;//Add bool for determining if program loaded successfully
+    //Add other stuff you need to transfer between process_execute and process_start (hint, think of the children... need a way to add to the child's list, wee below about thread's child list.)
 };
 
 int file_name_size (const char * file_name, char * delim) {
@@ -55,25 +77,31 @@ process_execute (const char *file_name)
   tid_t tid;
   char *fn_copy;
   char thread_name[16];
+
+  /* IGNORE FOR NOW
   int name_size = 16;
-  //struct exec_helper thread_info;
-  //thread_info.file_name = file_name;
-  //sema_init(&thread_info.load_sema, 1);
+  struct exec_helper thread_info;
+  thread_info.file_name = file_name;
+  sema_init(&thread_info.load_sema, 1);
   
   int file_size = file_name_size(file_name, " ");
   if (file_size < name_size)
 	name_size = file_size;
 
   strlcpy (thread_name, file_name, name_size);
+  */
 
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
+    
+  char * ptr;
+  file_name = strtok_r((char *) file_name, " ", &ptr); //need to name thread first arguement without the rest of the flags
+  strlcpy (thread_name, file_name, 16);
 
-  printf("name is: %s\n", thread_name);
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (thread_name, PRI_DEFAULT, start_process, fn_copy); //(void *) &thread_info);
+  tid = thread_create (thread_name, PRI_DEFAULT, start_process, fn_copy);
 
   if (tid != TID_ERROR) {
     //sema_down(&thread_info.load_sema);
@@ -81,7 +109,7 @@ process_execute (const char *file_name)
     //sema_up(&thread_info.load_sema);
     palloc_free_page (fn_copy);
   }
-    
+
   return tid;
 }
 
@@ -100,6 +128,20 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
+
+  if (success)
+  {
+      
+      printf("SUCESS\n");
+  }
+ 
+
+  else
+  {
+      printf("FAIL\n");
+
+  }
+
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -128,6 +170,13 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+
+  //printf("Wait : %s %d\n",thread_current()->name, child_tid);
+
+  while(1){
+
+  }
+
   return -1;
 }
 
@@ -475,6 +524,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
 {
+
+
   uint8_t *kpage;
   bool success = false;
 
@@ -483,19 +534,22 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
   char *save_ptr = input_save_ptr;
   int size = 0;
   int totalChars = 0;
+  int argc = 0;
 
   for (token = cmd_line; token != NULL;
   token = strtok_r (NULL, " ", &save_ptr)) {
-    args[size] = token;
-    totalChars = strlen(args[size++]) + 1;
+    argv[size] = token;
+    totalChars = strlen(argv[size++]) + 1;
   }
 	
-  int argSize = totalChars + size * 4 + 16;
+
+
+  int argvize = totalChars + size * 4 + 16;
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
-    {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
+  {
+      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argvize < 4000;
       if (success) {
         *esp = PHYS_BASE; //setup stack pointer
 
@@ -530,7 +584,8 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
       }
       else
         palloc_free_page (kpage);
-    }
+  }
+  
   return success;
 }
 

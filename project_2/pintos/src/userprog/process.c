@@ -17,9 +17,33 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/synch.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+/* Struct used to share between process_execute() in the
+   invoking thread and start_process() inside the newly invoked
+   thread. */
+struct exec_helper 
+{
+    const char *file_name;
+    struct semaphore load_sema;//##Add semaphore for loading (for resource race cases!)
+    bool loaded;//##Add bool for determining if program loaded successfully
+    //## Add other stuff you need to transfer between process_execute and process_start (hint, think of the children... need a way to add to the child's list, wee below about thread's child list.)
+};
+
+int file_name_size (const char * file_name, char * delim) {
+	int index = 0;
+	
+	while (file_name[index] == *delim) 
+		index++;
+	
+	while (file_name[index++] != *delim)
+		continue;
+
+	return index;
+}
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -28,21 +52,36 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
-  char *fn_copy;
   tid_t tid;
+  char *fn_copy;
+  char thread_name[16];
+  int name_size = 16;
+  //struct exec_helper thread_info;
+  //thread_info.file_name = file_name;
+  //sema_init(&thread_info.load_sema, 1);
+  
+  int file_size = file_name_size(file_name, " ");
+  if (file_size < name_size)
+	name_size = file_size;
 
-  /* Make a copy of FILE_NAME.
-     Otherwise there's a race between the caller and load(). */
+  strlcpy (thread_name, file_name, name_size);
+
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  printf("name is: %s\n", thread_name);
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (thread_name, PRI_DEFAULT, start_process, fn_copy); //(void *) &thread_info);
 
-  if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+  if (tid != TID_ERROR) {
+    //sema_down(&thread_info.load_sema);
+    //add child to current thread?
+    //sema_up(&thread_info.load_sema);
+    palloc_free_page (fn_copy);
+  }
+    
   return tid;
 }
 
@@ -196,7 +235,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp,const char * file_name);
+static bool setup_stack (void **esp, const char *, const char *);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -207,15 +246,19 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const char *file_name, void (**eip) (void), void **esp) 
+load (const char *cmd_line, void (**eip) (void), void **esp) 
 {
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
   off_t file_ofs;
   bool success = false;
+  char *save_ptr;
   int i;
 
+  char * file_ptr = strtok_r (cmd_line, " ", &save_ptr);
+  char file_name[18];
+  strlcpy(file_name, file_ptr, 18);
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -229,6 +272,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+
+  //file_deny_write (file);
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -303,7 +348,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp, file_name))
+  if (!setup_stack (esp, file_ptr, save_ptr))
     goto done;
 
   /* Start address. */
@@ -428,18 +473,18 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp, const char * file_name) 
+setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
 {
   uint8_t *kpage;
   bool success = false;
 
-  char *s = file_name;
   char * args[40];
-  char * token, *save_ptr;
+  char * token;
+  char *save_ptr = input_save_ptr;
   int size = 0;
   int totalChars = 0;
 
-  for (token = strtok_r (s, " ", &save_ptr); token != NULL;
+  for (token = cmd_line; token != NULL;
   token = strtok_r (NULL, " ", &save_ptr)) {
     args[size] = token;
     totalChars = strlen(args[size++]) + 1;
@@ -477,9 +522,11 @@ setup_stack (void **esp, const char * file_name)
 	memcpy (argpt, &argv, 4);
 	argpt -= 4;
 	memcpy (argpt, &size, 4);
-	void * ret = (void *) 0;
+	void * ret = (void *) NULL;
 	argpt -= 4;
 	memcpy (argpt, &ret, 4);
+	*esp = argpt;
+	hex_dump(0, PHYS_BASE, argSize, true);
       }
       else
         palloc_free_page (kpage);

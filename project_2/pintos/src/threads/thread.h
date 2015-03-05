@@ -90,8 +90,9 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
+    tid_t parent_tid;
+    struct child_process* cp;
     struct list child_list;
-    struct list_elem child_elem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -146,7 +147,7 @@ int thread_get_load_avg (void);
 
 
 
-
+bool check_live_thread(int tid);
 
 
 

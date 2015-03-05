@@ -15,12 +15,6 @@
 #include "userprog/process.h"
 #endif
 
-
-
-
-
-
-
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -211,6 +205,10 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
+  t->parent_tid = thread_tid();
+  struct child_process * child = add_child_to_cur_parent(t->tid);
+  t->cp = child;
+
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -474,7 +472,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
-  list_init (&t->children);
+  list_init (&t->child_list);
 
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
@@ -595,21 +593,18 @@ allocate_tid (void)
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
+bool check_live_thread (int tid)
+{
+  struct list_elem *e;
 
-//adds child to current running thread and pushes onto child list of currently running thread.
-static struct child_process * add_child_to_parent (int pid){
+  for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next (e))
+  {
+      struct thread *t = list_entry (e, struct thread, allelem);
+      if (t->tid == tid)
+      {
+        return true;
+      }
+  }
 
-
-
-}
-
-static struct child_process* get_child(int pid){
-
-}
-
-static void remove_child (struct child_process *cp){
-
-}
-static void remove_all_child_processes (void){
-
+  return false;
 }

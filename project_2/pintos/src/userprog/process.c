@@ -17,28 +17,67 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/thread.h"
 #include "threads/synch.h"
 
 
-//Gonna use later after children implementation is done
-/* Find a child of the current thread that matches the given tid. Return NULL if
-/*   not found */
-/*struct thread *
-thread_return_child (tid_t tid)
-{
+//adds child to current running thread and pushes onto child list of currently running thread.
+struct child_process * add_child_to_cur_parent (int pid){
+
+  struct child_process* cp = malloc(sizeof(struct child_process));
+  cp->pid = pid;
+  cp->exit = false;
+  cp->wait = true;
+  lock_init(&cp->child_lock);
+  list_push_back(&thread_current()->child_list, &cp->child_elem);
+
+  return cp;
+
+
+}
+
+struct child_process * get_child(int pid){
+
+  struct thread *t = thread_current();
   struct list_elem *e;
 
-  for (e = list_begin (&thread_current()->children); e != list_end (&thread_current()->children);
-           e = list_next (e))
+  for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next (e))
   {
-          struct thread *c = list_entry (e, struct thread, childelem);
-          
-          if (c->tid == tid)
-            return c;
+      struct child_process *cp = list_entry (e, struct child_process, child_elem);
+      if (pid == cp->pid)
+      {
+          return cp;
+      }
   }
 
+  printf("PID NOT FOUND!\n" );
   return NULL;
-}*/
+}
+
+void remove_child (struct child_process *cp){
+
+  list_remove(&cp->child_elem);
+  free(cp);
+
+
+}
+void remove_all_cur_children (void){
+
+  struct thread * t = thread_current();
+  struct list_elem *e;
+  struct list_elem *next;
+  while( e != list_end( &t->child_list) ){
+
+      next = list_next(e);
+      struct child_process *cp = list_entry (e, struct child_process, child_elem);
+      list_remove(&cp->child_elem);
+      free(cp);
+      e = next;
+  }
+
+}
+
+
 
 
 static thread_func start_process NO_RETURN;
@@ -119,6 +158,7 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+  printf("Process started!\n");
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
@@ -172,13 +212,27 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
 
-  //printf("Wait : %s %d\n",thread_current()->name, child_tid);
 
-  while(1){
+  struct child_process * cp = get_child(child_tid);
 
+  if(cp){
+    return -1;
   }
 
-  return -1;
+  if(cp->wait){
+    return -1;
+  }
+
+  cp->wait = true;
+  while( !cp->exit  ){
+    barrier();
+  }
+
+  //int status = cp->status; //Need to implement child statuses
+  
+  remove_child(cp);
+  return 0;
+
 }
 
 /* Free the current process's resources. */
@@ -191,6 +245,14 @@ process_exit (void)
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
+  
+  remove_all_cur_children();
+  
+  if( check_live_thread(cur -> parent_tid) ){
+    cur->cp->exit = true;
+  }
+
+
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set
@@ -606,3 +668,8 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
+
+
+
+

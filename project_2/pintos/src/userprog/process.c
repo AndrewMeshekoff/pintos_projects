@@ -90,7 +90,8 @@ struct exec_helper
 {
     const char *file_name;
     struct semaphore load_sema;//Add semaphore for loading (for resource race cases!)
-    bool loaded;//Add bool for determining if program loaded successfully
+    bool loaded; //Add bool for determining if program loaded successfully
+    struct child_process *child;
     //Add other stuff you need to transfer between process_execute and process_start (hint, think of the children... need a way to add to the child's list, wee below about thread's child list.)
 };
 
@@ -136,7 +137,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
     
   char * ptr;
-  file_name = strtok_r((char *) file_name, " ", &ptr); //need to name thread first arguement without the rest of the flags
+  file_name = strtok_r(file_name, " ", &ptr); //need to name thread first arguement without the rest of the flags
   strlcpy (thread_name, file_name, 16);
 
   /* Create a new thread to execute FILE_NAME. */
@@ -602,8 +603,6 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
     args[size] = token;
     totalChars = strlen(args[size++]) + 1;
   }
-	
-
 
   int argSize = totalChars + size * 4 + 16;
 

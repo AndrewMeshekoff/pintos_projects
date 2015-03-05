@@ -17,21 +17,23 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 	int call_num = (*(int *)f -> esp);
 	void * argv[3];
+	int i;
+
 	if (call_num == SYS_CREATE || call_num == SYS_SEEK) { // 2 arguments
-		for (int i = 0; i<2; i++) {
+		for (i = 0; i<2; i++) {
 			void * arg_ptr = (void *) f -> esp + sizeof(uint32_t) * (i+1);
 			validate_ptr(arg_ptr);
 			argv[i] = arg_ptr;
 		}
 	}
 	else if (call_num == SYS_READ || call_num == SYS_WRITE) { // 3 arguments
-		for (int i = 0; i<3; i++) {
+		for (i = 0; i<3; i++) {
 			void * arg_ptr = (void *) f -> esp + sizeof(uint32_t) * (i+1);
 			validate_ptr(arg_ptr);
 			argv[i] = arg_ptr;
 		}
 	}
-	else if (0 <= call_num <= 12) { // 1 argument
+	else if (0 <= call_num && call_num <= 12) { // 1 argument
 		void * arg_ptr = f -> esp + sizeof(uint32_t);
 		validate_ptr(arg_ptr);
 		argv[0] = arg_ptr;
@@ -47,13 +49,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_exit(*(int *) argv[0]);
 		break;
 		case SYS_EXEC:
-			sys_exec(*(int *) argv[0]);
+			sys_exec(*(char **) argv[0]);
 		break;
 		case SYS_WAIT:
 			sys_wait(*(pid_t *) argv[0]);
 		break;
 		case SYS_CREATE:
-			sys_create(*(char **) argv[0], *(unsigned *)argv[1])
+			sys_create(*(char **) argv[0], *(unsigned *) argv[1]);
 		break;
 		case SYS_REMOVE:
 			sys_remove(*(char **) argv[0]);
@@ -65,10 +67,10 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_filesize(*(int *) argv[0]);
 		break;
 		case SYS_READ:
-			sys_read(*(int *) argv[0], *(argv[1]), *(unsigned *) argv[2]);
+			sys_read(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_WRITE:
-			sys_write(*(int *) argv[0], *(argv[1]), *(unsigned *) argv[2]);
+			sys_write(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_SEEK:
 			sys_seek(*(int *) argv[0], *(unsigned *) argv[1]);
@@ -83,6 +85,10 @@ syscall_handler (struct intr_frame *f UNUSED)
 			//An error occured. Do something.
 		break;
 	}
+}
+
+bool validate_ptr (void * ptr) {
+	return true; // check that pointer is within user memory/legal
 }
 
 void sys_halt (void) {

@@ -91,7 +91,7 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
 
     tid_t parent_tid;
-    struct child_process* cp;
+    struct child_process* child;
     struct list child_list;
 
     /* Shared between thread.c and synch.c. */
@@ -148,13 +148,6 @@ int thread_get_load_avg (void);
 
 
 bool check_live_thread(int tid);
-
-
-
-/*static struct child_process * add_child_to_cur_parent (int pid);
-static struct child_process * get_child(int pid);
-static void remove_child (struct child_process *cp);
-static void remove_all_cur_children (void);*/
 
 
 #endif /* threads/thread.h */

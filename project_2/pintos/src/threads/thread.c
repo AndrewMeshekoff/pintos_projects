@@ -205,9 +205,10 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
+
   t->parent_tid = thread_tid();
   struct child_process * child = add_child_to_cur_parent(t->tid);
-  t->cp = child;
+  t->child = child;
 
 
   /* Add to run queue. */

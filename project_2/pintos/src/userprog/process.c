@@ -26,15 +26,15 @@
 //adds child to current running thread and pushes onto child list of currently running thread.
 struct child_process * add_child_to_cur_parent (int pid){
 
-  struct child_process* cp = malloc(sizeof(struct child_process));
-  cp->pid = pid;
-  cp->exit = false;
-  cp->wait = false;
-  lock_init(&cp->child_lock);
-  list_push_back(&thread_current()->child_list, &cp->child_elem);
-  cp -> load_status =  0;
+  struct child_process* child = malloc(sizeof(struct child_process));
+  child->pid = pid;
+  child->exit = false;
+  child->wait = false;
+  lock_init(&child->child_lock);
+  list_push_back(&thread_current()->child_list, &child->child_elem);
+  child -> load_status =  0;
 
-  return cp;
+  return child;
 
 
 }
@@ -46,10 +46,10 @@ struct child_process * get_child(int pid){
 
   for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next (e))
   {
-      struct child_process *cp = list_entry (e, struct child_process, child_elem);
-      if (pid == cp->pid)
+      struct child_process *child = list_entry (e, struct child_process, child_elem);
+      if (pid == child->pid)
       {
-          return cp;
+          return child;
       }
   }
 
@@ -57,10 +57,10 @@ struct child_process * get_child(int pid){
   return NULL;
 }
 
-void remove_child (struct child_process *cp){
+void remove_child (struct child_process *child){
 
-  list_remove(&cp->child_elem);
-  free(cp);
+  list_remove(&child->child_elem);
+  free(child);
 
 
 }
@@ -75,9 +75,9 @@ void remove_all_cur_children (void){
   while( e != list_end( &t->child_list) ){
 
       next = list_next(e);
-      struct child_process *cp = list_entry (e, struct child_process, child_elem);
-      list_remove(&cp->child_elem);
-      free(cp);
+      struct child_process *child = list_entry (e, struct child_process, child_elem);
+      list_remove(&child->child_elem);
+      free(child);
       e = next;
   }
 
@@ -220,24 +220,24 @@ process_wait (tid_t child_tid UNUSED)
 {
 
 
-  struct child_process * cp = get_child(child_tid);
+  struct child_process * child = get_child(child_tid);
 
-  if(!cp){
+  if(!child){
     return -1;
   }
 
-  if(cp->wait){
+  if(child->wait){
     return -1;
   }
 
-  cp->wait = true;
-  while( !cp->exit  ){
+  child->wait = true;
+  while( !child->exit  ){
      printf("waiting!!\n");
 
   }
 
-  int status = cp->load_status; //Need to implement child statuses
-  remove_child(cp);
+  int status = child->load_status; //Need to implement child statuses
+  remove_child(child);
   return status;
 
 }
@@ -255,7 +255,7 @@ process_exit (void)
   
   remove_all_cur_children();
   if( check_live_thread(cur -> parent_tid) ){
-    cur->cp->exit = true;
+    cur->child->exit = true;
   }
 
 
@@ -638,24 +638,21 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 	argpt -= 4;
 	*(char *) argpt = (char *) NULL;
 	
-  for (i = size-1; i>=0; i++) { // push locations of the arguements on *esp in reverse order
+  	for (i = size-1; i>=0; i++) { // push locations of the arguements on *esp in reverse order
 	  argpt -= 4;
 	  memcpy (argpt, args+i, 4);
 	}
 
-  //push argv
 	char ** argv = (char **) argpt;
 	argpt -= 4;
 	memcpy (argpt, &argv, 4);
 	argpt -= 4;
 	
-  //push argc
-  memcpy (argpt, &size, 4);
+ 	memcpy (argpt, &size, 4);
 	void * ret = (void *) NULL;
 	argpt -= 4;
-	
-  //push return adress
-  memcpy (argpt, &ret, 4);
+
+ 	 memcpy (argpt, &ret, 4);
 	*esp = argpt;
 	hex_dump(0, PHYS_BASE, argSize, true);
       }

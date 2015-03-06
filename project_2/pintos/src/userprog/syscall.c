@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #include "threads/thread.h"
 
 static void syscall_handler (struct intr_frame *);
@@ -21,14 +22,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-<<<<<<< HEAD
 
-
-  //printf ("system call!\n");
-  thread_exit ();
-}
-
-=======
 	int call_num = (*(int *)f -> esp);
 	void * argv[3];
 	int i;
@@ -111,10 +105,18 @@ void sys_halt (void) {
 
 void sys_exit (int status) {
 
+  struct thread *cur = thread_current();
+  if (check_live_thread(cur->parent_tid))
+    {
+      //cur->cp->load_status = status;
+    }
+  printf ("%s: exit(%d)\n", cur->name, status);
+  thread_exit();
+
+
 }
 
 pid_t sys_exec (const char *file) {
-	return 0; //replace this with something usefull
 }
 
 int sys_wait (pid_t pid) {
@@ -142,6 +144,14 @@ int sys_read (int fd, void *buffer, unsigned size) {
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {
+	
+	printf("fd = %u\n", fd);
+	if( fd == 1){
+		putbuf( buffer, size);
+		return size;
+	}
+
+
 	return 0; //replace this with something usefull
 }
 
@@ -156,5 +166,4 @@ unsigned sys_tell (int fd) {
 void sys_close (int fd) {
 
 }
->>>>>>> c386354c6ca2a8adc7053aba40500a8e60bfcd07
 

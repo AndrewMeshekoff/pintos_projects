@@ -21,15 +21,17 @@
 #include "threads/synch.h"
 
 
+
 //adds child to current running thread and pushes onto child list of currently running thread.
 struct child_process * add_child_to_cur_parent (int pid){
 
   struct child_process* cp = malloc(sizeof(struct child_process));
   cp->pid = pid;
   cp->exit = false;
-  cp->wait = true;
+  cp->wait = false;
   lock_init(&cp->child_lock);
   list_push_back(&thread_current()->child_list, &cp->child_elem);
+  cp -> load_status =  0;
 
   return cp;
 
@@ -66,6 +68,9 @@ void remove_all_cur_children (void){
   struct thread * t = thread_current();
   struct list_elem *e;
   struct list_elem *next;
+
+  e = list_begin( &t ->child_list);
+
   while( e != list_end( &t->child_list) ){
 
       next = list_next(e);
@@ -215,7 +220,7 @@ process_wait (tid_t child_tid UNUSED)
 
   struct child_process * cp = get_child(child_tid);
 
-  if(cp){
+  if(!cp){
     return -1;
   }
 
@@ -225,13 +230,12 @@ process_wait (tid_t child_tid UNUSED)
 
   cp->wait = true;
   while( !cp->exit  ){
-    barrier();
+    //barrier();
   }
 
-  //int status = cp->status; //Need to implement child statuses
-  
+  int status = cp->load_status; //Need to implement child statuses
   remove_child(cp);
-  return 0;
+  return status;
 
 }
 
@@ -473,7 +477,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   file_close (file);
   return success;
 }
-
+
 /* load() helpers. */
 
 static bool install_page (void *upage, void *kpage, bool writable);
@@ -619,26 +623,37 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 	int len;
 	for (i = size-1; i>=0; i++) {
 	  len = strlen(args[i]);
-	  argpt -= len + 1;
-	  strlcpy ((char *) argpt, args[i], len);
-	  args[i] = (char *) argpt;
+	  argpt -= len + 1; // decrement the stack to make room for the incoming arguement
+	  strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
+	  args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
 	}
-	while (!argpt % 4)
+
+
+	while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
 	  argpt--;
+
+
 	argpt -= 4;
 	*(char *) argpt = (char *) NULL;
-	for (i = size-1; i>=0; i++) {
+	
+  for (i = size-1; i>=0; i++) { // push locations of the arguements on *esp in reverse order
 	  argpt -= 4;
 	  memcpy (argpt, args+i, 4);
 	}
+
+  //push argv
 	char ** argv = (char **) argpt;
 	argpt -= 4;
 	memcpy (argpt, &argv, 4);
 	argpt -= 4;
-	memcpy (argpt, &size, 4);
+	
+  //push argc
+  memcpy (argpt, &size, 4);
 	void * ret = (void *) NULL;
 	argpt -= 4;
-	memcpy (argpt, &ret, 4);
+	
+  //push return adress
+  memcpy (argpt, &ret, 4);
 	*esp = argpt;
 	hex_dump(0, PHYS_BASE, argSize, true);
       }

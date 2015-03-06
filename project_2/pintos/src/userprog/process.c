@@ -15,6 +15,7 @@
 #include "threads/init.h"
 #include "threads/interrupt.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/thread.h"
@@ -123,6 +124,7 @@ process_execute (const char *file_name)
   char *fn_copy;
   char thread_name[16];
 
+
   /* IGNORE FOR NOW
   int name_size = 16;
   struct exec_helper thread_info;
@@ -230,7 +232,8 @@ process_wait (tid_t child_tid UNUSED)
 
   cp->wait = true;
   while( !cp->exit  ){
-    //barrier();
+     printf("waiting!!\n");
+
   }
 
   int status = cp->load_status; //Need to implement child statuses
@@ -251,7 +254,6 @@ process_exit (void)
   pd = cur->pagedir;
   
   remove_all_cur_children();
-  
   if( check_live_thread(cur -> parent_tid) ){
     cur->cp->exit = true;
   }

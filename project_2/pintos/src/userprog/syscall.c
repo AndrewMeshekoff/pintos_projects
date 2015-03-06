@@ -119,8 +119,10 @@ void sys_exit (int status) {
 pid_t sys_exec (const char *file) {
 }
 
-int sys_wait (pid_t pid) {
-	return 0; //replace this with something usefull
+int sys_wait (tid_t pid) {
+	
+	printf("WAITING\n");
+	return process_wait(pid);
 }
 
 bool sys_create (const char *file, unsigned initial_size) {

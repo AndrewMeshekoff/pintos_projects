@@ -592,7 +592,6 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 {
 
   printf("<in setup_stack>\n");
-  printf("Commands = %s\n", input_save_ptr  );
   uint8_t *kpage;
   bool success = false;
 
@@ -606,6 +605,7 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
   token = strtok_r (NULL, " ", &save_ptr)) {
     args[size] = token;
     totalChars = strlen(args[size++]) + 1;
+
   }
 
   int argSize = totalChars + size * 4 + 16;
@@ -615,48 +615,59 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
   {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
       if (success) {
-        *esp = PHYS_BASE - 12; //setup stack pointer
 
-	void * argpt = *esp;
+          *esp = PHYS_BASE; //setup stack pointer
 
-	int i;
-	int len;
-	for (i = size-1; i>=0; i++) {
-	  len = strlen(args[i]);
-	  argpt -= len + 1; // decrement the stack to make room for the incoming arguement
-	  strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
-	  args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
-	}
+        	void * argpt = *esp;
+
+        	int i;
+        	int len;
+        	
+          for (i = size-1; i>=0; i--) {
+
+        	  len = strlen(args[i]);
+        	  argpt -= len + 1; // decrement the stack to make room for the incoming arguement
+      
+            strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
+            printf("ARG PUSHED: %s\n", args[i] );
+        	  args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
+        	}
 
 
-	while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
-	  argpt--;
+          printf("ARGS PUSHED FINSIHED!\n");
+
+          //hex_dump(0, PHYS_BASE, argSize, true);
 
 
-	argpt -= 4;
-	*(char *) argpt = (char *) NULL;
-	
-  	for (i = size-1; i>=0; i++) { // push locations of the arguements on *esp in reverse order
-	  argpt -= 4;
-	  memcpy (argpt, args+i, 4);
-	}
+        	while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
+        	  argpt--;
 
-	char ** argv = (char **) argpt;
-	argpt -= 4;
-	memcpy (argpt, &argv, 4);
-	argpt -= 4;
-	
- 	memcpy (argpt, &size, 4);
-	void * ret = (void *) NULL;
-	argpt -= 4;
 
- 	 memcpy (argpt, &ret, 4);
-	*esp = argpt;
-	hex_dump(0, PHYS_BASE, argSize, true);
+        	argpt -= 4;
+        	*(char *) argpt = (char *) NULL;
+        	
+          	for (i = size-1; i>=0; i--) { // push locations of the arguements on *esp in reverse order
+        	  argpt -= 4;
+        	  memcpy (argpt, args+i, 4);
+        	}
+
+        	char ** argv = (char **) argpt;
+        	argpt -= 4;
+        	memcpy (argpt, &argv, 4);
+        	argpt -= 4;
+        	
+         	memcpy (argpt, &size, 4);
+        	void * ret = (void *) NULL;
+        	argpt -= 4;
+
+         	 memcpy (argpt, &ret, 4);
+        	*esp = argpt;
+        	hex_dump(0, PHYS_BASE, argSize, true);
       }
-      else
-        palloc_free_page (kpage);
-  }
+       
+        else
+          palloc_free_page (kpage);
+      }
   
   return success;
 }

@@ -169,9 +169,6 @@ start_process (void *file_name_)
 
   success = load (file_name, &if_.eip, &if_.esp);
 
-
-
-
   if (success)
   {
       
@@ -381,8 +378,6 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
-
-  printf("load file name:%s",)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
@@ -464,7 +459,6 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
         }
     }
 
-  printf("entering setup stack\n");
   /* Set up stack. */
   if (!setup_stack (esp, file_ptr, save_ptr))
     goto done;
@@ -595,86 +589,82 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
 {
+	printf("<in setup_stack>\n");
+	uint8_t *kpage;
+	bool success = false;
 
-  printf("<in setup_stack>\n");
-  uint8_t *kpage;
-  bool success = false;
+	char * args[40];
+	char * token;
+	char *save_ptr = input_save_ptr;
+	int size = 0;
+	int totalChars = 0;
 
-  char * args[40];
-  char * token;
-  char *save_ptr = input_save_ptr;
-  int size = 0;
-  int totalChars = 0;
+	for (token = cmd_line; token != NULL;
+		token = strtok_r (NULL, " ", &save_ptr)) {
+		args[size] = token;
+		totalChars = strlen(args[size++]) + 1;
+	}
 
-  for (token = cmd_line; token != NULL;
-  token = strtok_r (NULL, " ", &save_ptr)) {
-    args[size] = token;
-    totalChars = strlen(args[size++]) + 1;
+	int argSize = totalChars + size * 4 + 16;
 
-  }
+	kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+	if (kpage != NULL) 
+	{
+		success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
+		if (success) {
 
-  int argSize = totalChars + size * 4 + 16;
+			*esp = PHYS_BASE; //setup stack pointer
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if (kpage != NULL) 
-  {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
-      if (success) {
+			void * argpt = *esp;
 
-          *esp = PHYS_BASE; //setup stack pointer
+			int i;
+			int len;
 
-        	void * argpt = *esp;
+			for (i = size-1; i>=0; i--) {
 
-        	int i;
-        	int len;
-        	
-          for (i = size-1; i>=0; i--) {
+				len = strlen(args[i]);
+				argpt -= len + 1; // decrement the stack to make room for the incoming arguement
 
-        	  len = strlen(args[i]);
-        	  argpt -= len + 1; // decrement the stack to make room for the incoming arguement
-      
-            strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
-            printf("ARG PUSHED: %s\n", args[i] );
-        	  args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
-        	}
+				strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
+				printf("ARG PUSHED: %s\n", args[i] );
+				args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
+			}
 
 
-          printf("ARGS PUSHED FINSIHED!\n");
+			printf("ARGS PUSHED FINSIHED!\n");
 
-          //hex_dump(0, PHYS_BASE, argSize, true);
-
-
-        	while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
-        	  argpt--;
+			//hex_dump(0, PHYS_BASE, argSize, true);
 
 
-        	argpt -= 4;
-        	*(char *) argpt = (char *) NULL;
-        	
-          	for (i = size-1; i>=0; i--) { // push locations of the arguements on *esp in reverse order
-        	  argpt -= 4;
-        	  memcpy (argpt, args+i, 4);
-        	}
+			while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
+				argpt--;
 
-        	char ** argv = (char **) argpt;
-        	argpt -= 4;
-        	memcpy (argpt, &argv, 4);
-        	argpt -= 4;
-        	
-         	memcpy (argpt, &size, 4);
-        	void * ret = (void *) NULL;
-        	argpt -= 4;
+			argpt -= 4;
+			*(char *) argpt = (char *) NULL;
 
-         	 memcpy (argpt, &ret, 4);
-        	*esp = argpt;
-        	hex_dump(0, PHYS_BASE, argSize, true);
-      }
-       
-        else
-          palloc_free_page (kpage);
-      }
-  
-  return success;
+			for (i = size-1; i>=0; i--) { // push locations of the arguements on *esp in reverse order
+				argpt -= 4;
+				memcpy (argpt, args+i, 4);
+			}
+
+			char ** argv = (char **) argpt;
+			argpt -= 4;
+			memcpy (argpt, &argv, 4);
+			argpt -= 4;
+
+			memcpy (argpt, &size, 4);
+			void * ret = (void *) NULL;
+			argpt -= 4;
+
+			memcpy (argpt, &ret, 4);
+			*esp = argpt;
+			hex_dump(0, PHYS_BASE, argSize, true);
+		}
+		else
+			palloc_free_page (kpage);
+	}
+
+	return success;
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel

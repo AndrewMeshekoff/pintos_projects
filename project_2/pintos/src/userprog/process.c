@@ -120,45 +120,28 @@ int file_name_size (const char * file_name, char * delim) {
 tid_t
 process_execute (const char *file_name) 
 {
-  tid_t tid;
+
   char *fn_copy;
-  char thread_name[16];
+  tid_t tid;
 
-
-  /* IGNORE FOR NOW
-  int name_size = 16;
-  struct exec_helper thread_info;
-  thread_info.file_name = file_name;
-  sema_init(&thread_info.load_sema, 1);
-  
-  int file_size = file_name_size(file_name, " ");
-  if (file_size < name_size)
-	name_size = file_size;
-
-  strlcpy (thread_name, file_name, name_size);
-  */
-
+  /* Make a copy of FILE_NAME.
+     Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-    
-  char * ptr;
-  file_name = strtok_r(file_name, " ", &ptr); //need to name thread first arguement without the rest of the flags
-  strlcpy (thread_name, file_name, 16);
+
+  // Get parsed file name
+  char *save_ptr;
+  file_name = strtok_r((char *) file_name, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (thread_name, PRI_DEFAULT, start_process, fn_copy);
-
-  if (tid != TID_ERROR) {
-    //sema_down(&thread_info.load_sema);
-    //add child to current thread?
-    //sema_up(&thread_info.load_sema);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
-  }
-
   return tid;
-}
+
+ }
 
 /* A thread function that loads a user process and starts it
    running. */
@@ -166,7 +149,11 @@ static void
 start_process (void *file_name_)
 {
   printf("Process started!\n");
+
   char *file_name = file_name_;
+
+  printf("FILE_NAME = %s\n", file_name);
+
   struct intr_frame if_;
   bool success;
 
@@ -175,7 +162,11 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+
   success = load (file_name, &if_.eip, &if_.esp);
+
+
+
 
   if (success)
   {
@@ -219,7 +210,7 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
 
-
+ 
   struct child_process * child = get_child(child_tid);
 
   if(!child){
@@ -232,7 +223,7 @@ process_wait (tid_t child_tid UNUSED)
 
   child->wait = true;
   while( !child->exit  ){
-     printf("waiting!!\n");
+     //printf("waiting!!\n");
 
   }
 
@@ -366,6 +357,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *cmd_line, void (**eip) (void), void **esp) 
 {
+
+
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -383,6 +376,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
+
+
 
   file = filesys_open (file_name);
   if (file == NULL) 
@@ -473,6 +468,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   *eip = (void (*) (void)) ehdr.e_entry;
 
   success = true;
+
+
 
  done:
   /* We arrive here whether the load is successful or not. */

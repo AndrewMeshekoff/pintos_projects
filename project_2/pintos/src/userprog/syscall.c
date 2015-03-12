@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "process.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -106,10 +107,8 @@ void sys_halt (void) {
 void sys_exit (int status) {
 
   struct thread *cur = thread_current();
-  if (check_live_thread(cur->parent_tid))
-    {
-      //cur->cp->load_status = status;
-    }
+  cur->child->exit = true;
+
   printf ("%s: exit(%d)\n", cur->name, status);
   thread_exit();
 
@@ -121,7 +120,7 @@ pid_t sys_exec (const char *file) {
 
 int sys_wait (tid_t pid) {
 	
-	printf("WAITING\n");
+	//printf("WAITING\n");
 	return process_wait(pid);
 }
 

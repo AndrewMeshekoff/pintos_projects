@@ -210,7 +210,6 @@ thread_create (const char *name, int priority,
   struct child_process * c = add_child_to_cur_parent(t->tid);
   t->child = c;
 
-
   /* Add to run queue. */
   thread_unblock (t);
 

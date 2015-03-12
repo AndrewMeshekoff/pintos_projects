@@ -629,12 +629,10 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
         	  argpt -= len + 1; // decrement the stack to make room for the incoming arguement
       
             strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
-            printf("ARG PUSHED: %s\n", args[i] );
         	  args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
+
         	}
 
-
-          printf("ARGS PUSHED FINSIHED!\n");
 
           //hex_dump(0, PHYS_BASE, argSize, true);
 
@@ -660,9 +658,12 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
         	void * ret = (void *) NULL;
         	argpt -= 4;
 
-         	 memcpy (argpt, &ret, 4);
+         	memcpy (argpt, &ret, 4);
         	*esp = argpt;
-        	hex_dump(0, PHYS_BASE, argSize, true);
+        	hex_dump(0, *esp, argSize*2, true);
+
+          ASSERT(1== 0);
+
       }
        
         else

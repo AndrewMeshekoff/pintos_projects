@@ -591,7 +591,8 @@ static bool
 setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
 {
 
-
+  printf("<in setup_stack>\n");
+  printf("Commands = %s\n", input_save_ptr  );
   uint8_t *kpage;
   bool success = false;
 
@@ -614,7 +615,7 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
   {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true) && argSize < 4000;
       if (success) {
-        *esp = PHYS_BASE; //setup stack pointer
+        *esp = PHYS_BASE - 12; //setup stack pointer
 
 	void * argpt = *esp;
 

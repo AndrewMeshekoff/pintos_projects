@@ -64,6 +64,7 @@ void remove_child (struct child_process *child){
 
 
 }
+
 void remove_all_cur_children (void){
 
   struct thread * t = thread_current();
@@ -138,6 +139,9 @@ process_execute (const char *file_name)
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
+ //sema_down(&thread_info.load_sema);
+ //add child to current thread?
+ //sema_up(&thread_info.load_sema);
     palloc_free_page (fn_copy);
   return tid;
 
@@ -378,7 +382,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   process_activate ();
 
 
-
+  printf("load file name:%s",)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
@@ -460,6 +464,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
         }
     }
 
+  printf("entering setup stack\n");
   /* Set up stack. */
   if (!setup_stack (esp, file_ptr, save_ptr))
     goto done;

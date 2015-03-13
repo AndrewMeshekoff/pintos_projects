@@ -110,18 +110,26 @@ void sys_exit (int status) {
   cur->child->exit = true;
 
   printf ("%s: exit(%d)\n", cur->name, status);
+  
   thread_exit();
 
 
 }
 
 pid_t sys_exec (const char *file) {
+	int pid = process_execute(file);
+	struct child_proccess * cp =  add_child_to_cur_parent (pid);
 
+	if (!cp){
+		printf ( "process_execute failed !!!!\n");
+	}
+
+	return pid;
 }
 
 int sys_wait (tid_t pid) {
 	
-	//printf("WAITING\n");
+	printf("WAITING\n");
 	return process_wait(pid);
 }
 

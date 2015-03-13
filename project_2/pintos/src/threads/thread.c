@@ -297,12 +297,6 @@ thread_exit (void)
 
   struct thread *cur = thread_current ();
 
-  remove_all_cur_children();
-  if( check_live_thread(cur -> parent_tid) ){
-    //lock_aqcuire(&((cur->child)->child_lock));
-    cur->child->exit = true;
-    //lock_release(&((cur->child)->child_lock));
-  }
 
 #ifdef USERPROG
   process_exit ();

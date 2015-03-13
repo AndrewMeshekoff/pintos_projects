@@ -4,7 +4,10 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
 #include "process.h"
+#include "userprog/pagedir.h"
+
 
 static void syscall_handler (struct intr_frame *);
 
@@ -47,8 +50,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 		validate_ptr(arg_ptr);
 		argv[0] = arg_ptr;
 	}
-	else
+	else {
 		// error!
+	}
 
 	switch (call_num) {
 		case SYS_HALT:
@@ -96,8 +100,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	}
 }
 
-bool validate_ptr (void * ptr) {
-	return true; // check that pointer is within user memory/legal
+void validate_ptr (void * ptr) {
+	if(is_user_vaddr(ptr) && ptr > PHYS_BASE + PGSIZE)// check that pointer is within user memory/legal
+		sys_exit(-1);
 }
 
 void sys_halt (void) {
@@ -128,8 +133,6 @@ pid_t sys_exec (const char *file) {
 }
 
 int sys_wait (tid_t pid) {
-	
-	printf("WAITING\n");
 	return process_wait(pid);
 }
 
@@ -154,8 +157,7 @@ int sys_read (int fd, void *buffer, unsigned size) {
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {
-	
-	printf("fd = %u\n", fd);
+	//printf("fd = %u\n", fd);
 	if( fd == 1){
 		putbuf( buffer, size);
 		return size;

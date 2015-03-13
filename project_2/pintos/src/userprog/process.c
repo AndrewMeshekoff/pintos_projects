@@ -36,7 +36,6 @@ struct child_process * add_child_to_cur_parent (int pid){
 
   return child;
 
-
 }
 
 struct child_process * get_child(int pid){
@@ -71,15 +70,12 @@ void remove_all_cur_children (void){
   struct list_elem *e;
   struct list_elem *next;
 
-  e = list_begin( &t ->child_list);
-
-  while( e != list_end( &t->child_list) ){
-
-      next = list_next(e);
+  for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next(e))
+  {
       struct child_process *child = list_entry (e, struct child_process, child_elem);
       list_remove(&child->child_elem);
       free(child);
-      e = next;
+      e = list_prev(e);
   }
 
 }
@@ -170,13 +166,13 @@ start_process (void *file_name_)
   if (success)
   {
       
-      printf("SUCESS\n");
+      //printf("SUCESS\n");
   }
  
 
   else
   {
-      printf("FAIL\n");
+      //printf("FAIL\n");
 
   }
 
@@ -217,7 +213,6 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   if(child->wait){
-    printf("DOUBLE WAIT CALL\n");
     return -1;
 
   }
@@ -226,8 +221,6 @@ process_wait (tid_t child_tid UNUSED)
   while( !(child->exit)  ){
      barrier();
   }
-
-  printf("CHILD IS EXITING\n");
 
   int status = child->load_status; //Need to implement child statuses
   remove_child(child);
@@ -244,6 +237,13 @@ process_exit (void)
   uint32_t *pd;
 
   struct thread *cur = thread_current ();
+
+  remove_all_cur_children();
+  if( check_live_thread(cur -> parent_tid) ){
+    //lock_aqcuire(&((cur->child)->child_lock));
+    cur->child->exit = true;
+    //lock_release(&((cur->child)->child_lock));
+  }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -586,9 +586,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
+
+
 static bool
 setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
-{
+{	
+
 	uint8_t *kpage;
 	bool success = false;
 
@@ -647,12 +650,12 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 			argpt -= 4;
 
 			memcpy (argpt, &size, 4);
+			
 			void * ret = (void *) NULL;
 			argpt -= 4;
 
 			memcpy (argpt, &ret, 4);
 			*esp = argpt;
-			hex_dump(0, *esp, argSize*2, true);
 		}
 		else
 			palloc_free_page (kpage);

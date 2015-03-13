@@ -3,7 +3,7 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
-bool validate_ptr (void * ptr);
+void validate_ptr (void * ptr);
 void syscall_init (void);
 void sys_halt (void);
 void sys_exit (int status);

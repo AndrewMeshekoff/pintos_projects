@@ -152,11 +152,9 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  printf("Process started!\n");
 
   char *file_name = file_name_;
 
-  printf("FILE_NAME = %s\n", file_name);
 
   struct intr_frame if_;
   bool success;
@@ -219,14 +217,17 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   if(child->wait){
+    printf("DOUBLE WAIT CALL\n");
     return -1;
+
   }
 
   child->wait = true;
-  while( !child->exit  ){
-     //printf("waiting!!\n");
-
+  while( !(child->exit)  ){
+     barrier();
   }
+
+  printf("CHILD IS EXITING\n");
 
   int status = child->load_status; //Need to implement child statuses
   remove_child(child);
@@ -238,6 +239,9 @@ process_wait (tid_t child_tid UNUSED)
 void
 process_exit (void)
 {
+
+
+  printf("EXITING!\n");
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
@@ -248,6 +252,7 @@ process_exit (void)
   remove_all_cur_children();
   if( check_live_thread(cur -> parent_tid) ){
     cur->child->exit = true;
+    printf("PARENT IS ALIVE\n" );
   }
 
 
@@ -589,7 +594,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr) 
 {
-	printf("<in setup_stack>\n");
 	uint8_t *kpage;
 	bool success = false;
 
@@ -623,14 +627,11 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 			for (i = size-1; i>=0; i--) {
 
 				len = strlen(args[i]);
-				argpt -= len + 1; // decrement the stack to make room for the incoming arguement
+				argpt -= len +1  ; // decrement the stack to make room for the incoming arguement
 
 				strlcpy ((char *) argpt, args[i], len+1); // copy arguement onto stack pointer
-				printf("ARG PUSHED: %s\n", args[i] );
 				args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
 			}
-
-			printf("ARGS PUSHED FINSIHED!\n");
 
 
 			if ((size_t)argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
@@ -661,6 +662,7 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 		else
 			palloc_free_page (kpage);
 	}
+
 
 	return success;
 

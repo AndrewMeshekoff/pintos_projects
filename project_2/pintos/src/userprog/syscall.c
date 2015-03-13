@@ -60,37 +60,37 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_halt();
 		break;
 		case SYS_EXIT:
-			sys_exit(*(int *) argv[0]);
+			 sys_exit(*(int *) argv[0]);
 		break;
 		case SYS_EXEC:
-			sys_exec(*(char **) argv[0]);
+			f->eax = sys_exec(*(char **) argv[0]);
 		break;
 		case SYS_WAIT:
-			sys_wait(*(pid_t *) argv[0]);
+			f->eax = sys_wait(*(pid_t *) argv[0]);
 		break;
 		case SYS_CREATE:
-			sys_create(*(char **) argv[0], *(unsigned *) argv[1]);
+			f->eax = sys_create(*(char **) argv[0], *(unsigned *) argv[1]);
 		break;
 		case SYS_REMOVE:
-			sys_remove(*(char **) argv[0]);
+			f->eax = sys_remove(*(char **) argv[0]);
 		break;
 		case SYS_OPEN:
-			sys_open(*(char **) argv[0]);
+			f->eax = sys_open(*(char **) argv[0]);
 		break;
 		case SYS_FILESIZE:
-			sys_filesize(*(int *) argv[0]);
+			f->eax = sys_filesize(*(int *) argv[0]);
 		break;
 		case SYS_READ:
-			sys_read(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
+			f->eax = sys_read(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_WRITE:
-			sys_write(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
+			f->eax = sys_write(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_SEEK:
-			sys_seek(*(int *) argv[0], *(unsigned *) argv[1]);
+			 sys_seek(*(int *) argv[0], *(unsigned *) argv[1]);
 		break;
 		case SYS_TELL:
-			sys_tell(*(int *) argv[0]);
+			f->eax = sys_tell(*(int *) argv[0]);
 		break;
 		case SYS_CLOSE:
 			sys_close(*(int *) argv[0]);
@@ -102,13 +102,14 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void validate_ptr (void * ptr) {
-	if(is_user_vaddr(ptr) && ptr >= PHYS_BASE - PGSIZE)// check that pointer is within user memory/legal
+
+	if(is_user_vaddr(ptr) && ptr >= PHYS_BASE - PGSIZE)// check that pointer is within user memory/legal . PHYSBASE - PGSIZE make sure that pointer doesnt go out of the page limit.
 		return;	
 	sys_exit(-1);
 }
 
 void sys_halt (void) {
-
+	  shutdown_power_off();
 }
 
 void sys_exit (int status) {
@@ -137,7 +138,13 @@ int sys_wait (tid_t pid) {
 
 bool sys_create (const char *file, unsigned initial_size) {
 
-	return 0; //replace this with something usefull
+	bool file_created;
+
+	lock_acquire(&sys_lock);
+	file_created = filesys_create(file, initial_size);
+	lock_release(&sys_lock);
+
+	return file_created; //replace this with something usefull
 }
 
 bool sys_remove (const char *file) {
@@ -149,6 +156,7 @@ int sys_open (const char *file) {
 }
 
 int sys_filesize (int fd) {
+
 	return 0; //replace this with something usefull
 }
 
@@ -157,12 +165,10 @@ int sys_read (int fd, void *buffer, unsigned size) {
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {
-	//printf("fd = %u\n", fd);
 	if( fd == 1){
 		putbuf( buffer, size);
 		return size;
 	}
-
 
 	return 0; //replace this with something usefull
 }

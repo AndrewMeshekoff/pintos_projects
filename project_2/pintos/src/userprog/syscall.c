@@ -26,7 +26,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-
+	validate_ptr(f->esp);
 	int call_num = (*(int *)f -> esp);
 	void * argv[3];
 	int i;
@@ -101,8 +101,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void validate_ptr (void * ptr) {
-	if(is_user_vaddr(ptr) && ptr > PHYS_BASE + PGSIZE)// check that pointer is within user memory/legal
-		sys_exit(-1);
+	if(is_user_vaddr(ptr) && ptr >= PHYS_BASE - PGSIZE)// check that pointer is within user memory/legal
+		return;	
+	sys_exit(-1);
 }
 
 void sys_halt (void) {
@@ -137,6 +138,7 @@ int sys_wait (tid_t pid) {
 }
 
 bool sys_create (const char *file, unsigned initial_size) {
+	filesys_create(file);
 	return 0; //replace this with something usefull
 }
 

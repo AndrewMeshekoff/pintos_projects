@@ -238,17 +238,14 @@ process_wait (tid_t child_tid UNUSED)
 void
 process_exit (void)
 {
-  struct thread *cur = thread_current ();
+
   uint32_t *pd;
+
+  struct thread *cur = thread_current ();
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
-  
-  remove_all_cur_children();
-  if( check_live_thread(cur -> parent_tid) ){
-    cur->child->exit = true;
-  }
 
 
   if (pd != NULL) 

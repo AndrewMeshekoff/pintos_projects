@@ -625,22 +625,20 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 				len = strlen(args[i]);
 				argpt -= len + 1; // decrement the stack to make room for the incoming arguement
 
-				strlcpy ((char *) argpt, args[i], len); // copy arguement onto stack pointer
+				strlcpy ((char *) argpt, args[i], len+1); // copy arguement onto stack pointer
 				printf("ARG PUSHED: %s\n", args[i] );
 				args[i] = (char *) argpt; //args[i] will now hold pointer on the stack instead of the arguement 
 			}
 
-
 			printf("ARGS PUSHED FINSIHED!\n");
 
-			//hex_dump(0, PHYS_BASE, argSize, true);
 
-
-			while (!argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
-				argpt--;
-
+			if ((size_t)argpt % 4) // after pushing all args make sure that pointer is at loc divis. by 4
+				argpt -= (size_t)argpt % 4;
+			
 			argpt -= 4;
 			*(char *) argpt = (char *) NULL;
+			
 
 			for (i = size-1; i>=0; i--) { // push locations of the arguements on *esp in reverse order
 				argpt -= 4;
@@ -658,13 +656,14 @@ setup_stack (void **esp, const char * cmd_line, const char * input_save_ptr)
 
 			memcpy (argpt, &ret, 4);
 			*esp = argpt;
-			hex_dump(0, PHYS_BASE, argSize, true);
+			hex_dump(0, *esp, argSize*2, true);
 		}
 		else
 			palloc_free_page (kpage);
 	}
 
 	return success;
+
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel

@@ -51,7 +51,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		argv[0] = arg_ptr;
 	}
 	else {
-		// error!
+		
+		return ;
 	}
 
 	switch (call_num) {
@@ -115,10 +116,7 @@ void sys_exit (int status) {
   cur->child->exit = true;
 
   printf ("%s: exit(%d)\n", cur->name, status);
-  
   thread_exit();
-
-
 }
 
 pid_t sys_exec (const char *file) {
@@ -137,6 +135,7 @@ int sys_wait (tid_t pid) {
 }
 
 bool sys_create (const char *file, unsigned initial_size) {
+
 	return 0; //replace this with something usefull
 }
 

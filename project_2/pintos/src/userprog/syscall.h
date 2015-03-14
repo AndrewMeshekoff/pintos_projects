@@ -1,14 +1,17 @@
 #include <user/syscall.h>
+#include <list.h>
 
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
-struct file_id {
-	const char * file_name;
+struct list file_list; //has to be initialized. where?
+
+struct file_info {
+	const char file_name[17];
 	int file_des;
+	struct file * f;
 	struct list_elem file_elem;
 };
-
 
 void validate_ptr (void * ptr);
 void syscall_init (void);
@@ -28,5 +31,7 @@ void sys_close (int fd);
 
 bool validate_file(const char *file);
 bool validate_page(const char *file);
+
+struct lock sys_lock;
 
 #endif /* userprog/syscall.h */

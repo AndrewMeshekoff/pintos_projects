@@ -13,8 +13,6 @@
 
 static void syscall_handler (struct intr_frame *);
 
-struct lock sys_lock;
-
 void
 syscall_init (void) 
 {
@@ -133,7 +131,7 @@ bool validate_page(const char *file){
 }
 
 void sys_halt (void) {
-	  shutdown_power_off();
+	shutdown_power_off();
 }
 
 void sys_exit (int status) {
@@ -150,7 +148,7 @@ pid_t sys_exec (const char *file) {
 	struct child_proccess * cp =  add_child_to_cur_parent (pid);
 
 	if (!cp){
-		printf ( "process_execute failed !!!!\n");
+		//printf ( "process_execute failed !!!!\n");
 		sys_exit(-1);
 	}
 
@@ -191,12 +189,20 @@ int sys_open (const char *file) {
 		lock_release(&sys_lock);
 		return -1;
 	}
+
+	struct thread * cur = thread_current();
+	struct file_info * opened = malloc(sizeof(struct file_info));
+	strlcpy(opened->file_name, file, 17);
+	opened->f = f;
+	opened->file_des = cur->files;
+	(cur->files)++;
+	list_push_back(&cur->file_list, &opened->file_elem);
 	
-	
-	
+
+	printf("file success: %s\n", opened->file_name);
 	lock_release(&sys_lock);
 	
-	return 0; //replace this with something usefull
+	return opened->file_des;
 }
 
 int sys_filesize (int fd) {

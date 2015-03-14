@@ -20,6 +20,7 @@
 #include "threads/vaddr.h"
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "syscall.h"
 
 
 
@@ -66,17 +67,17 @@ void remove_child (struct child_process *child){
 
 void remove_all_cur_children (void){
 
-  struct thread * t = thread_current();
-  struct list_elem *e;
-  struct list_elem *next;
+  struct thread * cur = thread_current();
+  struct list_elem *it;
 
-  for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next(e))
-  {
-      struct child_process *child = list_entry (e, struct child_process, child_elem);
-      list_remove(&child->child_elem);
-      free(child);
-      e = list_prev(e);
-  }
+  if (!list_empty(&cur->file_list))
+	  for (it = list_begin (&cur->child_list); it != list_end (&cur->child_list);  it = list_next(it))
+	  {
+	      struct child_process *child = list_entry (it, struct child_process, child_elem);
+	      list_remove(&child->child_elem);
+	      free(child);
+	      it = list_prev(it);
+	  }
 
 }
 
@@ -241,6 +242,16 @@ process_exit (void)
     //lock_release(&((cur->child)->child_lock));
   }
 
+  struct list_elem * it;
+  if (!list_empty(&cur->file_list))
+	  for (it = list_begin (&cur->file_list); it != list_end (&cur->file_list);  it = list_next(it))
+	  {
+	      struct file_info * file = list_entry (it, struct file_info, file_elem);
+	      list_remove(&file->file_elem);
+	      free(file);
+	      it = list_prev(it);
+	  }
+
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -368,6 +379,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   char file_name[18];
   strlcpy(file_name, file_ptr, 18);
 
+  lock_acquire(&sys_lock);
+
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
@@ -454,6 +467,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
           break;
         }
     }
+
+  lock_release(&sys_lock);
 
   /* Set up stack. */
   if (!setup_stack (esp, file_ptr, save_ptr))

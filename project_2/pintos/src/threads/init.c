@@ -129,6 +129,8 @@ main (void)
 
   printf ("Boot complete.\n");
   
+  lock_init(&sys_lock);
+
   /* Run actions specified on kernel command line. */
   run_actions (argv);
 

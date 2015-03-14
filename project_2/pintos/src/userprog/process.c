@@ -70,14 +70,12 @@ void remove_all_cur_children (void){
   struct thread * cur = thread_current();
   struct list_elem *it;
 
-  if (!list_empty(&cur->file_list))
-	  for (it = list_begin (&cur->child_list); it != list_end (&cur->child_list);  it = list_next(it))
-	  {
-	      struct child_process *child = list_entry (it, struct child_process, child_elem);
-	      list_remove(&child->child_elem);
-	      free(child);
-	      it = list_prev(it);
-	  }
+  while (!list_empty (&cur->file_list))
+  {
+    it = list_pop_front (&cur->child_list);
+    struct child_process *child = list_entry (it, struct child_process, child_elem);
+    free(child);
+  }
 
 }
 
@@ -243,14 +241,14 @@ process_exit (void)
   }
 
   struct list_elem * it;
-  if (!list_empty(&cur->file_list))
-	  for (it = list_begin (&cur->file_list); it != list_end (&cur->file_list);  it = list_next(it))
-	  {
-	      struct file_info * file = list_entry (it, struct file_info, file_elem);
-	      list_remove(&file->file_elem);
-	      free(file);
-	      it = list_prev(it);
-	  }
+
+  while (!list_empty (&cur->file_list))
+  {
+    it = list_pop_front (&cur->file_list);
+    struct file_info * file = list_entry (it, struct file_info, file_elem);
+    free(file);
+  }
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

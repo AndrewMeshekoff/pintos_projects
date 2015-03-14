@@ -197,9 +197,7 @@ int sys_open (const char *file) {
 	opened->file_des = cur->files;
 	(cur->files)++;
 	list_push_back(&cur->file_list, &opened->file_elem);
-	
 
-	printf("file success: %s\n", opened->file_name);
 	lock_release(&sys_lock);
 	
 	return opened->file_des;

@@ -3,6 +3,13 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
+struct file_id {
+	const char * file_name;
+	int file_des;
+	struct list_elem file_elem;
+};
+
+
 void validate_ptr (void * ptr);
 void syscall_init (void);
 void sys_halt (void);
@@ -18,5 +25,8 @@ int sys_write (int fd, const void *buffer, unsigned size);
 void sys_seek (int fd, unsigned position);
 unsigned sys_tell (int fd);
 void sys_close (int fd);
+
+bool validate_file(const char *file);
+bool validate_page(const char *file);
 
 #endif /* userprog/syscall.h */

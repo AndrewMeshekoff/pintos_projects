@@ -21,8 +21,12 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
+void * get_NULL (char * arg) {
+	int i;
+	for (i = 0; arg[i] != '\0'; i++) {}
+	return (void *) arg;
+}
 
-//whats a intr frame?
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
@@ -74,6 +78,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_remove(*(char **) argv[0]);
 		break;
 		case SYS_OPEN:
+			validate_ptr(get_NULL(*(char **)argv[0]));
 			sys_open(*(char **) argv[0]);
 		break;
 		case SYS_FILESIZE:
@@ -83,7 +88,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_read(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_WRITE:
-			sys_write(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
+			sys_write(*(int *) argv[0], *(void **) argv[1], *(unsigned *) argv[2]);
 		break;
 		case SYS_SEEK:
 			sys_seek(*(int *) argv[0], *(unsigned *) argv[1]);
@@ -138,7 +143,6 @@ int sys_wait (tid_t pid) {
 }
 
 bool sys_create (const char *file, unsigned initial_size) {
-	filesys_create(file);
 	return 0; //replace this with something usefull
 }
 

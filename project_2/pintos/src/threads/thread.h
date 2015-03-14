@@ -82,6 +82,11 @@ typedef int tid_t;
    blocked state is on a semaphore wait list. */
 struct thread
   {
+	  
+	int file_desc_num = 2 ;  			//want starting FD to start at 2. STDIN = 0, STDOUT = 1
+										//increment this every time new file is opened in filesys_open
+	struct list file_list;				//stores file_id structs ;
+										
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
@@ -93,6 +98,8 @@ struct thread
     tid_t parent_tid;
     struct child_process* child;
     struct list child_list;
+
+	int fd;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

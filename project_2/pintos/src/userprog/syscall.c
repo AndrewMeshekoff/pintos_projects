@@ -15,7 +15,6 @@ static void syscall_handler (struct intr_frame *);
 
 struct lock sys_lock;
 
-
 void
 syscall_init (void) 
 {
@@ -142,6 +141,21 @@ void validate_ptr (void * ptr) {
 	sys_exit(-1);
 }
 
+bool validate_file(const char *file){
+	if(!file)
+		sys_exit(-1);
+	
+	return; 
+}
+
+bool validate_page(const char *file){
+	void * page = pagedir_get_page(thread_current()->pagedir, file);
+	if (!page)
+	{
+		sys_exit(-1);
+	}	
+}
+
 void sys_halt (void) {
 	  shutdown_power_off();
 }
@@ -173,17 +187,9 @@ int sys_wait (tid_t pid) {
 }
 
 bool sys_create (const char *file, unsigned initial_size) {
-
-	if(!file){
-		sys_exit(-1);
-	}
-
-	           
-	void * page = pagedir_get_page(thread_current()->pagedir, file);
-	if (!page)
-	{
-		sys_exit(-1);
-	}	
+	
+	validate_file(file);
+	validate_page(file);
        
 	bool file_created;
 	lock_acquire(&sys_lock);
@@ -199,6 +205,23 @@ bool sys_remove (const char *file) {
 }
 
 int sys_open (const char *file) {
+	
+	validate_file(file);
+	validate_page(file);
+
+	lock_acquire(&sys_lock);
+	
+	struct file * f = filesys_open(file);
+	
+	if(!f){
+		lock_release(&sys_lock);
+		return -1;
+	}
+	
+	
+	
+	lock_release(&sys_lock);
+	
 	return 0; //replace this with something usefull
 }
 

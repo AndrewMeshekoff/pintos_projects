@@ -173,7 +173,7 @@ bool sys_create (const char *file, unsigned initial_size) {
 }
 
 bool sys_remove (const char *file) {
-	return 0; //replace this with something usefull
+	return 0;
 }
 
 int sys_open (const char *file) {
@@ -230,6 +230,18 @@ unsigned sys_tell (int fd) {
 }
 
 void sys_close (int fd) {
+  struct thread *cur = thread_current();
+  struct list_elem *it;
 
+  for (it = list_begin(&cur->file_list); it != list_end(&cur->file_list);  it = list_next(it))
+  {
+      struct file_info * closing = list_entry (it, struct file_info, file_elem);
+      if (closing->file_des == fd)
+      {
+          list_remove(&it);
+          free(closing);
+          return;
+      }
+  }
 }
 

@@ -62,7 +62,6 @@ void remove_child (struct child_process *child){
   list_remove(&child->child_elem);
   free(child);
 
-
 }
 
 void remove_all_cur_children (void){
@@ -70,7 +69,7 @@ void remove_all_cur_children (void){
   struct thread * cur = thread_current();
   struct list_elem *it;
 
-  while (!list_empty (&cur->file_list))
+  while (!list_empty (&cur->child_list))
   {
     it = list_pop_front (&cur->child_list);
     struct child_process *child = list_entry (it, struct child_process, child_elem);
@@ -78,9 +77,6 @@ void remove_all_cur_children (void){
   }
 
 }
-
-
-
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -248,7 +244,6 @@ process_exit (void)
     struct file_info * file = list_entry (it, struct file_info, file_elem);
     free(file);
   }
-
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

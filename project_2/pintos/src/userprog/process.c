@@ -117,7 +117,6 @@ int file_name_size (const char * file_name, char * delim) {
 tid_t
 process_execute (const char *file_name) 
 {
-
   char *fn_copy;
   tid_t tid;
 
@@ -151,7 +150,6 @@ start_process (void *file_name_)
 
   char *file_name = file_name_;
 
-
   struct intr_frame if_;
   bool success;
 
@@ -166,13 +164,11 @@ start_process (void *file_name_)
   if (success)
   {
       
-      //printf("SUCESS\n");
   }
  
 
   else
   {
-      //printf("FAIL\n");
 
   }
 

@@ -8,6 +8,8 @@
 #include "process.h"
 #include "userprog/pagedir.h"
 
+#define STACK_LIMIT ((void *) 0x08048000)
+
 
 static void syscall_handler (struct intr_frame *);
 
@@ -26,7 +28,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-	validate_ptr(f->esp);
+	validate_ptr( (const void*) f->esp);
 	int call_num = (*(int *)f -> esp);
 	void * argv[3];
 	int i;
@@ -103,8 +105,40 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 void validate_ptr (void * ptr) {
 
-	if(is_user_vaddr(ptr) && ptr >= PHYS_BASE - PGSIZE)// check that pointer is within user memory/legal . PHYSBASE - PGSIZE make sure that pointer doesnt go out of the page limit.
+	/* PHYS_BASE +----------------------------------+ POINTER START
+             |            user stack            |
+             |                 |                |
+             |                 |                |
+             |                 V                |
+             |          grows downward          |
+             |                                  |
+             |                                  |
+             |                                  |
+             |                                  |
+             |           grows upward           |   POINTER MUST BE IN HERE
+             |                 ^                |
+             |                 |                |
+             |                 |                |
+             +----------------------------------+
+             | uninitialized data segment (BSS) |
+             +----------------------------------+
+             |     initialized data segment     |
+             +----------------------------------+
+             |           code segment           |
+  0x08048000 +----------------------------------+    POINTER END 
+             |                                  |
+             |                                  |
+             |                                  |
+             |                                  |
+             |                                  |
+           0 +----------------------------------+ */ 
+
+
+	if( is_user_vaddr(ptr) && ptr >= STACK_LIMIT ){ 
 		return;	
+	
+	}
+
 	sys_exit(-1);
 }
 
@@ -127,7 +161,9 @@ pid_t sys_exec (const char *file) {
 
 	if (!cp){
 		printf ( "process_execute failed !!!!\n");
+		sys_exit(-1);
 	}
+
 
 	return pid;
 }
@@ -138,13 +174,24 @@ int sys_wait (tid_t pid) {
 
 bool sys_create (const char *file, unsigned initial_size) {
 
-	bool file_created;
+	if(!file){
+		sys_exit(-1);
+	}
 
+	           
+	void * page = pagedir_get_page(thread_current()->pagedir, file);
+	if (!page)
+	{
+		sys_exit(-1);
+	}	
+       
+	bool file_created;
 	lock_acquire(&sys_lock);
 	file_created = filesys_create(file, initial_size);
 	lock_release(&sys_lock);
 
 	return file_created; //replace this with something usefull
+	
 }
 
 bool sys_remove (const char *file) {

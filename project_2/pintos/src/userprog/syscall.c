@@ -268,21 +268,23 @@ int sys_read (int fd, void *buffer, unsigned size) {
         return size;
     }
 
-    else
-    {
-	    lock_acquire(&file_lock);
-	    struct file* reading_file = get_file(fd);
 
-	    if( !reading_file){
-	    	lock_release(&file_lock);
-	    	return -1;
-	    }
-	    
-	    int file_size = file_read(reading_file, (char*)buffer, size);
-	    lock_release(&file_lock);
+	validate_page(buffer);
+	validate_file(buffer);
 
-		return file_size;
-	}
+    lock_acquire(&file_lock);
+    struct file* reading_file = get_file(fd);
+
+    if( !reading_file){
+    	lock_release(&file_lock);
+    	return -1;
+    }
+    
+    int file_size = file_read(reading_file, (char*)buffer, size);
+    lock_release(&file_lock);
+
+	return file_size;
+	
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {
@@ -291,6 +293,24 @@ int sys_write (int fd, const void *buffer, unsigned size) {
 		putbuf( buffer, size);
 		return size;
 	}
+
+	validate_page(buffer);
+	validate_file(buffer);
+
+	lock_acquire(&file_lock);
+	struct file* reading_file = get_file(fd);
+
+	    if( !reading_file){
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+	    
+	int file_size = file_write(reading_file, (char*)buffer, size);
+	lock_release(&file_lock);
+
+	return file_size;
+
+
 
 	return 0; //replace this with something usefull
 }

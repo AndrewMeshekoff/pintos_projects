@@ -11,9 +11,6 @@
 #define LOADING 0
 #define LOAD_PASSED 1
 #define LOAD_FAILED 2
-/*Load Status ?? */
-
-
 
 struct child_process
 {

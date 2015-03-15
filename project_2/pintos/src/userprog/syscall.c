@@ -180,7 +180,7 @@ pid_t sys_exec (const char * file) {
 	if (cp->load_status == LOAD_PASSED)
 		return pid;
 	else if (cp->load_status == LOAD_FAILED)	
-	return -1;
+		return -1;
 }
 
 int sys_wait (tid_t pid) {
@@ -196,7 +196,7 @@ bool sys_create (const char *file, unsigned initial_size) {
 	file_created = filesys_create(file, initial_size);
 	lock_release(&file_lock);
 
-	return file_created; //replace this with something usefull
+	return file_created;
 }
 
 bool sys_remove (const char *file) {
@@ -258,6 +258,8 @@ int sys_filesize (int fd) {
 
 int sys_read (int fd, void *buffer, unsigned size) {
 
+	validate_ptr(buffer);
+
 	if(fd == 0){
 
 	    	char* type_buffer = (char *) buffer;
@@ -276,7 +278,7 @@ int sys_read (int fd, void *buffer, unsigned size) {
     	lock_acquire(&file_lock);
     	struct file* reading_file = get_file(fd);
 
-    	if( !reading_file){
+    	if(!reading_file){
     		lock_release(&file_lock);
     		return -1;
     	}
@@ -290,6 +292,8 @@ int sys_read (int fd, void *buffer, unsigned size) {
 
 int sys_write (int fd, const void *buffer, unsigned size) {
 	
+	validate_ptr(buffer);
+
 	if(fd == 1){
 		putbuf( buffer, size);
 		return size;
@@ -301,10 +305,10 @@ int sys_write (int fd, const void *buffer, unsigned size) {
 	lock_acquire(&file_lock);
 	struct file* reading_file = get_file(fd);
 
-	    if( !reading_file){
+	if( !reading_file){
 	    	lock_release(&file_lock);
 	    	return -1;
-	    }
+	}
 	    
 	int file_size = file_write(reading_file, (char*)buffer, size);
 	lock_release(&file_lock);
@@ -320,10 +324,10 @@ void sys_seek (int fd, unsigned position) {
 	lock_acquire(&file_lock);
 	struct file* reading_file = get_file(fd);
 
-	    if( !reading_file){
+	if( !reading_file){
 	    	lock_release(&file_lock);
 	    	return -1;
-	    }
+	}
 	    
 	int file_size = file_seek(reading_file, position);
 	lock_release(&file_lock);
@@ -337,15 +341,15 @@ unsigned sys_tell (int fd) {
 	lock_acquire(&file_lock);
 	struct file* reading_file = get_file(fd);
 
-	    if( !reading_file){
+	if( !reading_file){
 	    	lock_release(&file_lock);
 	    	return -1;
-	    }
+	}
 	    
 	int tell_pos  = file_seek(reading_file);
 	lock_release(&file_lock);
 
-	return tell_pos; //replace this with something usefull
+	return tell_pos;
 }
 
 void sys_close (int fd) {

@@ -9,9 +9,6 @@
 #include "userprog/pagedir.h"
 #include "userprog/process.h"
 
-
-
-
 #define STACK_LIMIT ((void *) 0x08048000)
 
 
@@ -32,14 +29,6 @@ struct file * get_file(int fd)
   
    return NULL;
 }
-struct file * close_file(int fd){
-
-}
-struct file * remove_file(int fd){
-
-
-}
-
 
 
 static void syscall_handler (struct intr_frame *);
@@ -85,7 +74,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		argv[0] = arg_ptr;
 	}
 	else {
-		
 		return ;
 	}
 
@@ -180,9 +168,7 @@ pid_t sys_exec (const char * file) {
 	validate_page(file);
 	validate_ptr(file);
 
-	char file_cpy[256];
-	strlcpy(file_cpy, file, 256);
-	pid_t pid = process_execute(file_cpy);
+	pid_t pid = process_execute(file);
 	struct child_process *cp;
 	cp = get_child (pid);
 
@@ -254,48 +240,57 @@ int sys_filesize (int fd) {
 int sys_read (int fd, void *buffer, unsigned size) {
 
 	if(fd == 0){
-		int i;
-	    char* type_buffer = (char *) buffer;
-	    
-	    for ( i = 0; i < size; i++)
+
+	    	char* type_buffer = (char *) buffer;
+		int i;	    
+	   	for ( i = 0; i < size; i++)
 		{
-		  type_buffer[i] = input_getc();
+			type_buffer[i] = input_getc();
 		}
       
-        return size;
-    }
+        	return size;
+    	}
 
-    else
-    {
-	    lock_acquire(&file_lock);
-	    struct file* reading_file = get_file(fd);
+	validate_page(buffer);
+	validate_file(buffer);
+
+    	lock_acquire(&file_lock);
+    	struct file* reading_file = get_file(fd);
+
+    	if( !reading_file){
+    		lock_release(&file_lock);
+    		return -1;
+    	}
+    
+    	int file_size = file_read(reading_file, (char*)buffer, size);
+    	lock_release(&file_lock);
+
+	return file_size;
+	
+}
+
+int sys_write (int fd, const void *buffer, unsigned size) {
+	
+	if(fd == 1){
+		putbuf( buffer, size);
+		return size;
+	}
+
+	validate_page(buffer);
+	validate_file(buffer);
+
+	lock_acquire(&file_lock);
+	struct file* reading_file = get_file(fd);
 
 	    if( !reading_file){
 	    	lock_release(&file_lock);
 	    	return -1;
 	    }
 	    
-	    int file_size = file_read(reading_file, (char*)buffer, size);
-	    lock_release(&file_lock);
-
-		return file_size;
-	}
-}
-
-int sys_write (int fd, const void *buffer, unsigned size) {
-	
-	if( fd == 1){
-		putbuf( buffer, size);
-		return size;
-	}
-
-
-	lock_acquire(&file_lock);
-
-
+	int file_size = file_write(reading_file, (char*)buffer, size);
 	lock_release(&file_lock);
 
-	return 0; //replace this with something usefull
+	return file_size;
 }
 
 void sys_seek (int fd, unsigned position) {

@@ -33,7 +33,7 @@ struct child_process * add_child_to_cur_parent (int pid){
   child->wait = false;
   lock_init(&child->child_lock);
   list_push_back(&thread_current()->child_list, &child->child_elem);
-  child -> load_status =  0;
+  child -> load_status =  NOT_LOADED;
 
   return child;
 
@@ -52,19 +52,17 @@ struct child_process * get_child(int pid){
           return child;
       }
   }
-
-  printf("PID NOT FOUND!\n" );
   return NULL;
 }
 
-void remove_child (struct child_process *child){
+ void remove_child (struct child_process *child){
 
   list_remove(&child->child_elem);
   free(child);
 
 }
 
-void remove_all_cur_children (void){
+ void remove_all_cur_children (void){
 
   struct thread * cur = thread_current();
   struct list_elem *it;
@@ -77,6 +75,7 @@ void remove_all_cur_children (void){
   }
 
 }
+
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -126,6 +125,8 @@ process_execute (const char *file_name)
   char *save_ptr;
   file_name = strtok_r((char *) file_name, " ", &save_ptr);
 
+  
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
@@ -145,6 +146,7 @@ start_process (void *file_name_)
 
   char *file_name = file_name_;
 
+
   struct intr_frame if_;
   bool success;
 
@@ -155,16 +157,15 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
   success = load (file_name, &if_.eip, &if_.esp);
-
   if (success)
   {
-      
+      thread_current()->child->load_status = LOAD_PASSED;
   }
  
 
   else
   {
-
+      thread_current()->child->load_status = LOAD_FAILED;
   }
 
 
@@ -205,7 +206,6 @@ process_wait (tid_t child_tid UNUSED)
 
   if(child->wait){
     return -1;
-
   }
 
   child->wait = true;
@@ -213,9 +213,9 @@ process_wait (tid_t child_tid UNUSED)
      barrier();
   }
 
-  int status = child->load_status; //Need to implement child statuses
+  int process_status = child->process_status; //Need to implement child statuses
   remove_child(child);
-  return status;
+  return process_status;
 
 }
 
@@ -248,8 +248,6 @@ process_exit (void)
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
-
-
 
   if (pd != NULL) 
     {

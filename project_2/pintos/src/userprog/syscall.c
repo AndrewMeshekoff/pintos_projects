@@ -180,7 +180,7 @@ pid_t sys_exec (const char * file) {
 
 	if (cp->load_status == LOAD_PASSED)
 		return pid;
-
+	else if (cp->load_status == LOAD_FAILED)	
 	return -1;
 }
 

@@ -92,7 +92,7 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
 
     tid_t parent_tid;
-    struct child_process* child;
+    struct child_proc * child;
     struct list child_list;
 
     int files;  			//want starting FD to start at 2. STDIN = 0, STDOUT = 1

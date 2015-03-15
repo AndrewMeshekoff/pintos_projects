@@ -163,7 +163,7 @@ pid_t sys_exec (const char * file) {
 	validate_ptr(file);
 
 	pid_t pid = process_execute(file);
-	struct child_process * new_proc;
+	struct child_proc * new_proc;
 	new_proc = get_child (pid);
 
 	if (!new_proc)

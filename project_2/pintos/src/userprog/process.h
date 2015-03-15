@@ -5,8 +5,6 @@
 
 #include "threads/synch.h"
 
-
-/*Child_Process Status DEFINES*/
 #define EXITED 0
 #define KILLED -1
 
@@ -14,7 +12,7 @@
 #define LOAD_PASSED 1
 #define LOAD_FAILED 2
 
-struct child_process
+struct child_proc
 {
   tid_t pid;
   bool exit;

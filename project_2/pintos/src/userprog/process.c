@@ -25,9 +25,9 @@
 
 
 //adds child to current running thread and pushes onto child list of currently running thread.
-struct child_process * add_child_to_cur_parent (int pid){
+struct child_proc * add_child_to_cur_parent (int pid){
 
-  struct child_process* child = malloc(sizeof(struct child_process));
+  struct child_proc* child = malloc(sizeof(struct child_proc));
   child->pid = pid;
   child->exit = false;
   list_push_back(&thread_current()->child_list, &child->child_elem);
@@ -37,14 +37,14 @@ struct child_process * add_child_to_cur_parent (int pid){
   return child;
 }
 
-struct child_process * get_child(int pid){
+struct child_proc * get_child(int pid){
 
   struct thread *t = thread_current();
   struct list_elem *e;
 
   for (e = list_begin (&t->child_list); e != list_end (&t->child_list);  e = list_next (e))
   {
-      struct child_process *child = list_entry (e, struct child_process, child_elem);
+      struct child_proc *child = list_entry (e, struct child_proc, child_elem);
       if (pid == child->pid)
       {
           return child;
@@ -64,7 +64,7 @@ struct exec_helper
     const char *file_name;
     struct semaphore load_sema;//Add semaphore for loading (for resource race cases!)
     bool loaded; //Add bool for determining if program loaded successfully
-    struct child_process *child;
+    struct child_proc *child;
     //Add other stuff you need to transfer between process_execute and process_start (hint, think of the children... need a way to add to the child's list, wee below about thread's child list.)
 };
 
@@ -169,7 +169,7 @@ process_wait (tid_t child_tid UNUSED)
 {
 
  
-  struct child_process * child = get_child(child_tid);
+  struct child_proc * child = get_child(child_tid);
 
   if(!child){
     return -1;
@@ -200,7 +200,7 @@ process_exit (void)
   while (!list_empty (&cur->child_list))
   {
     it = list_pop_front (&cur->child_list);
-    struct child_process *child = list_entry (it, struct child_process, child_elem);
+    struct child_proc *child = list_entry (it, struct child_proc, child_elem);
     free(child);
   }
 

@@ -17,10 +17,10 @@
 
 struct file * get_file(int fd)
 {
-  struct thread *t = thread_current();
+  struct thread *cur = thread_current();
   struct list_elem *e;
 
-  for (e = list_begin (&t->file_list); e != list_end (&t->file_list);
+  for (e = list_begin (&cur->file_list); e != list_end (&cur->file_list);
        e = list_next (e))
    {
         struct file_info * fi = list_entry (e, struct file_info, file_elem);
@@ -114,7 +114,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_FILESIZE:
 			f->eax = sys_filesize(*(int *) argv[0]);
 		break;
-		case SYS_READ:
+		case SYS_READ: 
 			f->eax = sys_read(*(int *) argv[0], *(void **) (argv[1]), *(unsigned *) argv[2]);
 		break;
 		case SYS_WRITE:
@@ -130,17 +130,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 			sys_close(*(int *) argv[0]);
 		break;
 		default:
-			//An error occured. Do something.
+			sys_exit(-1);
 		break;
 	}
 }
 
 void validate_ptr (void * ptr) {
 
-
 	if( is_user_vaddr(ptr) && ptr >= STACK_LIMIT ){ 
 		return;	
-	
 	}
 
 	sys_exit(-1);
@@ -258,13 +256,33 @@ int sys_filesize (int fd) {
 
 int sys_read (int fd, void *buffer, unsigned size) {
 
-	if(fd == 1){
+	if(fd == 0){
+		int i;
+	    char* type_buffer = (char *) buffer;
+	    
+	    for ( i = 0; i < size; i++)
+		{
+		  type_buffer[i] = input_getc();
+		}
+      
+        return size;
+    }
 
+    else
+    {
+	    lock_acquire(&file_lock);
+	    struct file* reading_file = get_file(fd);
+
+	    if( !reading_file){
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+	    
+	    int file_size = file_read(reading_file, (char*)buffer, size);
+	    lock_release(&file_lock);
+
+		return file_size;
 	}
-
-
-
-	return 0; //replace this with something usefull
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {

@@ -29,12 +29,14 @@ struct file * get_file(int fd)
    }
   
    return NULL;
-
 }
 struct file * close_file(int fd){
 
 }
-struct file * remove_file(int fd){}
+struct file * remove_file(int fd){
+
+
+}
 
 
 
@@ -253,6 +255,10 @@ int sys_filesize (int fd) {
 
 int sys_read (int fd, void *buffer, unsigned size) {
 
+	if(fd == 1){
+
+	}
+
 
 
 	return 0; //replace this with something usefull
@@ -264,11 +270,6 @@ int sys_write (int fd, const void *buffer, unsigned size) {
 		putbuf( buffer, size);
 		return size;
 	}
-
-	lock_acquire(&sys_lock);
-
-
-	lock_release(&sys_lock);
 
 	return 0; //replace this with something usefull
 }

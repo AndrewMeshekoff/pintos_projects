@@ -122,7 +122,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // Get parsed file name
-  char *save_ptr;
+  char *save_ptr = NULL;
   file_name = strtok_r((char *) file_name, " ", &save_ptr);
 
   

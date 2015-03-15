@@ -32,6 +32,6 @@ void sys_close (int fd);
 bool validate_file(const char *file);
 bool validate_page(const char *file);
 
-struct lock sys_lock;
+struct lock file_lock;
 
 #endif /* userprog/syscall.h */

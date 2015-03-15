@@ -372,7 +372,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
   char file_name[18];
   strlcpy(file_name, file_ptr, 18);
 
-  lock_acquire(&sys_lock);
+  lock_acquire(&file_lock);
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -461,7 +461,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp)
         }
     }
 
-  lock_release(&sys_lock);
+  lock_release(&file_lock);
 
   /* Set up stack. */
   if (!setup_stack (esp, file_ptr, save_ptr))

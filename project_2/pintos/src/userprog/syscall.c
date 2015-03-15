@@ -4,9 +4,11 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/malloc.h"
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
 #include "userprog/process.h"
+
 
 
 
@@ -45,7 +47,7 @@ static void syscall_handler (struct intr_frame *);
 void
 syscall_init (void) 
 {
-  lock_init(&sys_lock);
+  lock_init(&file_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -210,9 +212,9 @@ bool sys_create (const char *file, unsigned initial_size) {
 	validate_page(file);
        
 	bool file_created;
-	lock_acquire(&sys_lock);
+	lock_acquire(&file_lock);
 	file_created = filesys_create(file, initial_size);
-	lock_release(&sys_lock);
+	lock_release(&file_lock);
 
 	return file_created; //replace this with something usefull
 }
@@ -226,15 +228,16 @@ int sys_open (const char *file) {
 	validate_file(file);
 	validate_page(file);
 
-	lock_acquire(&sys_lock);
+	lock_acquire(&file_lock);
 	
 	struct file * f = filesys_open(file);
 	
 	if(!f){
-		lock_release(&sys_lock);
+		lock_release(&file_lock);
 		return -1;
 	}
 
+	
 	struct thread * cur = thread_current();
 	struct file_info * opened = malloc(sizeof(struct file_info));
 	strlcpy(opened->file_name, file, 17);
@@ -243,7 +246,7 @@ int sys_open (const char *file) {
 	(cur->files)++;
 	list_push_back(&cur->file_list, &opened->file_elem);
 
-	lock_release(&sys_lock);
+	lock_release(&file_lock);
 	
 	return opened->file_des;
 }
@@ -286,15 +289,23 @@ void sys_close (int fd) {
   struct thread *cur = thread_current();
   struct list_elem *it;
 
+  if(fd == 1 || fd == 0) {
+    return;
+  }
+
+  lock_acquire(&file_lock);
   for (it = list_begin(&cur->file_list); it != list_end(&cur->file_list);  it = list_next(it))
   {
       struct file_info * closing = list_entry (it, struct file_info, file_elem);
       if (closing->file_des == fd)
       {
-          list_remove(&it);
+          list_remove(it);
+          file_close(closing->f);
           free(closing);
+	  lock_release(&file_lock);
           return;
       }
   }
+  lock_release(&file_lock);
 }
 

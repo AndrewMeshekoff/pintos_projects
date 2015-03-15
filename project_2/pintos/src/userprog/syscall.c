@@ -26,7 +26,6 @@ struct file * get_file(int fd)
 	      return fi->f;
 	    }
    }
-  
    return NULL;
 }
 

@@ -7,6 +7,8 @@
 
 
 /*Child_Process Status DEFINES*/
+#define EXITED 0
+#define KILLED -1
 
 #define LOADING 0
 #define LOAD_PASSED 1
@@ -15,15 +17,10 @@
 struct child_process
 {
   tid_t pid;
-  
-  bool wait;
   bool exit;
-
   int process_status;
-
   int load_status;
   struct list_elem child_elem;
-  struct lock child_lock;
 };
 
 

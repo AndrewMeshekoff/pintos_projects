@@ -30,13 +30,11 @@ struct child_process * add_child_to_cur_parent (int pid){
   struct child_process* child = malloc(sizeof(struct child_process));
   child->pid = pid;
   child->exit = false;
-  child->wait = false;
-  lock_init(&child->child_lock);
   list_push_back(&thread_current()->child_list, &child->child_elem);
   child -> load_status =  LOADING;
+  child -> process_status = 0;
 
   return child;
-
 }
 
 struct child_process * get_child(int pid){
@@ -54,28 +52,6 @@ struct child_process * get_child(int pid){
   }
   return NULL;
 }
-
- void remove_child (struct child_process *child){
-
-  list_remove(&child->child_elem);
-  free(child);
-
-}
-
- void remove_all_cur_children (void){
-
-  struct thread * cur = thread_current();
-  struct list_elem *it;
-
-  while (!list_empty (&cur->child_list))
-  {
-    it = list_pop_front (&cur->child_list);
-    struct child_process *child = list_entry (it, struct child_process, child_elem);
-    free(child);
-  }
-
-}
-
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -199,17 +175,13 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  if(child->wait){
-    return -1;
-  }
-
-  child->wait = true;
-  while( !(child->exit)  ){
+  while(!(child->exit))
      barrier();
-  }
 
-  int process_status = child->process_status; //Need to implement child statuses
-  remove_child(child);
+  int process_status = child->process_status;
+  list_remove(&child->child_elem);
+  free(child);
+
   return process_status;
 
 }
@@ -223,15 +195,14 @@ process_exit (void)
   uint32_t *pd;
 
   struct thread *cur = thread_current ();
+  struct list_elem *it;
 
-  remove_all_cur_children();
-  if( check_live_thread(cur -> parent_tid) ){
-    //lock_aqcuire(&((cur->child)->child_lock));
-    cur->child->exit = true;
-    //lock_release(&((cur->child)->child_lock));
+  while (!list_empty (&cur->child_list))
+  {
+    it = list_pop_front (&cur->child_list);
+    struct child_process *child = list_entry (it, struct child_process, child_elem);
+    free(child);
   }
-
-  struct list_elem * it;
 
   while (!list_empty (&cur->file_list))
   {
@@ -239,6 +210,14 @@ process_exit (void)
     struct file_info * file = list_entry (it, struct file_info, file_elem);
     free(file);
   }
+
+  if( check_live_thread(cur -> parent_tid) ){
+    //lock_aqcuire(&((cur->child)->child_lock));
+    cur->child->exit = true;
+    //lock_release(&((cur->child)->child_lock));
+  }
+
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

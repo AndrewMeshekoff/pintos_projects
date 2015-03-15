@@ -1,11 +1,10 @@
 #include <user/syscall.h>
-#include "userprog/process.h"
 #include <list.h>
 
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
-struct list file_list; //has to be initialized. where?
+struct list file_list;
 
 struct file_info {
 	const char file_name[17];
@@ -13,16 +12,6 @@ struct file_info {
 	struct file * f;
 	struct list_elem file_elem;
 };
-
-struct file * get_file(int fd);
-struct file * close_file(int fd);
-struct file * remove_file(int fd);
-
-
-struct child_process * add_child_to_cur_parent (int pid);
-struct child_process * get_child(int pid);
-void remove_child (struct child_process *cp);
-void remove_all_cur_children (void);
 
 void validate_ptr (void * ptr);
 void syscall_init (void);

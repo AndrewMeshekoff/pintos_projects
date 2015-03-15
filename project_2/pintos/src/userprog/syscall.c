@@ -124,9 +124,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 void validate_ptr (void * ptr) {
 
-	if( is_user_vaddr(ptr) && ptr >= STACK_LIMIT ){ 
-		return;	
-	}
+	if( is_user_vaddr(ptr) && ptr >= STACK_LIMIT )
+		return;
 
 	sys_exit(-1);
 }
@@ -141,9 +140,7 @@ bool validate_file(const char *file){
 bool validate_page(const char *file){
 	void * page = pagedir_get_page(thread_current()->pagedir, file);
 	if (!page)
-	{
 		sys_exit(-1);
-	}	
 }
 
 void sys_halt (void) {
@@ -154,13 +151,11 @@ void sys_exit (int status) {
 
   struct thread *cur = thread_current();
   cur->child->exit = true;
-  int s = cur->child->process_status;
+  cur->child->process_status = status;
 
 
   printf ("%s: exit(%d)\n", cur->name, status);
   thread_exit();
-
-  return s;
 }
 
 pid_t sys_exec (const char * file) {
@@ -168,18 +163,18 @@ pid_t sys_exec (const char * file) {
 	validate_ptr(file);
 
 	pid_t pid = process_execute(file);
-	struct child_process *cp;
-	cp = get_child (pid);
+	struct child_process * new_proc;
+	new_proc = get_child (pid);
 
-	if (!cp)
+	if (!new_proc)
 		sys_exit(-1);
 
-	while(cp->load_status == LOADING)
+	while(new_proc->load_status == LOADING)
 		barrier();
 
-	if (cp->load_status == LOAD_PASSED)
+	if (new_proc->load_status == LOAD_PASSED)
 		return pid;
-	else if (cp->load_status == LOAD_FAILED)	
+	else if (new_proc->load_status == LOAD_FAILED)	
 		return -1;
 }
 

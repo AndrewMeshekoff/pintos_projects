@@ -26,7 +26,6 @@ struct file * get_file(int fd)
 	      return fi->f;
 	    }
    }
-  
    return NULL;
 }
 
@@ -201,7 +200,16 @@ bool sys_create (const char *file, unsigned initial_size) {
 }
 
 bool sys_remove (const char *file) {
-	return 0;
+
+	if(!file){
+		return false;
+	}
+
+	lock_acquire(&file_lock);	
+	bool removed = sys_remove(file);
+	lock_release(&file_lock);
+
+	return removed;
 }
 
 int sys_open (const char *file) {
@@ -234,7 +242,18 @@ int sys_open (const char *file) {
 
 int sys_filesize (int fd) {
 
-	return 0; //replace this with something usefull
+    lock_acquire(&file_lock);
+    struct file* reading_file = get_file(fd);
+
+    if( !reading_file){
+    	lock_release(&file_lock);
+    	return -1;
+    }
+    
+    int file_size = file_length(reading_file);
+    lock_release(&file_lock);
+
+	return file_size;
 }
 
 int sys_read (int fd, void *buffer, unsigned size) {
@@ -295,10 +314,38 @@ int sys_write (int fd, const void *buffer, unsigned size) {
 
 void sys_seek (int fd, unsigned position) {
 
+	validate_file(position);
+	validate_ptr(position);
+
+	lock_acquire(&file_lock);
+	struct file* reading_file = get_file(fd);
+
+	    if( !reading_file){
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+	    
+	int file_size = file_seek(reading_file, position);
+	lock_release(&file_lock);
+
+	return file_size;
+	
 }
 
 unsigned sys_tell (int fd) {
-	return 0; //replace this with something usefull
+
+	lock_acquire(&file_lock);
+	struct file* reading_file = get_file(fd);
+
+	    if( !reading_file){
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+	    
+	int tell_pos  = file_seek(reading_file);
+	lock_release(&file_lock);
+
+	return tell_pos; //replace this with something usefull
 }
 
 void sys_close (int fd) {

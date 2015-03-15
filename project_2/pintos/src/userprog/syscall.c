@@ -176,29 +176,27 @@ void sys_exit (int status) {
   return s;
 }
 
-pid_t sys_exec (const char *file) {
-
+pid_t sys_exec (const char * file) {
 	validate_page(file);
 	validate_ptr(file);
 
-	int pid = process_execute(file);
+	char file_cpy[256];
+	strlcpy(file_cpy, file, 256);
+	printf("%s\n", file);
+	pid_t pid = process_execute(file_cpy);
 	struct child_process *cp;
 	cp = get_child (pid);
 
-	if (!cp){
+	if (!cp)
 		sys_exit(-1);
-	}
 
-    if (cp->load_status == LOAD_FAILED)
-    {
-      return -1;
-    }
-	
-    /*while(cp->load_status != LOAD_PASSED){
-    	barrier();
-    }*/
+	while(cp->load_status == LOADING)
+		barrier();
 
-	return pid;
+	if (cp->load_status == LOAD_PASSED)
+		return pid;
+
+	return -1;
 }
 
 int sys_wait (tid_t pid) {
@@ -268,10 +266,10 @@ int sys_write (int fd, const void *buffer, unsigned size) {
 		return size;
 	}
 
-	lock_acquire(&sys_lock);
+	lock_acquire(&file_lock);
 
 
-	lock_release(&sys_lock);
+	lock_release(&file_lock);
 
 	return 0; //replace this with something usefull
 }

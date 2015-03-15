@@ -33,7 +33,7 @@ struct child_process * add_child_to_cur_parent (int pid){
   child->wait = false;
   lock_init(&child->child_lock);
   list_push_back(&thread_current()->child_list, &child->child_elem);
-  child -> load_status =  NOT_LOADED;
+  child -> load_status =  LOADING;
 
   return child;
 
@@ -122,7 +122,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // Get parsed file name
-  char *save_ptr;
+  char *save_ptr = NULL;
   file_name = strtok_r((char *) file_name, " ", &save_ptr);
 
   
@@ -157,16 +157,11 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
   success = load (file_name, &if_.eip, &if_.esp);
-  if (success)
-  {
-      thread_current()->child->load_status = LOAD_PASSED;
-  }
- 
 
+  if (success)
+      thread_current()->child->load_status = LOAD_PASSED;
   else
-  {
       thread_current()->child->load_status = LOAD_FAILED;
-  }
 
 
   /* If load failed, quit. */

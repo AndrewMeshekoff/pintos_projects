@@ -8,9 +8,9 @@
 
 /*Child_Process Status DEFINES*/
 
-#define NOT_LOADED 0
+#define LOADING 0
 #define LOAD_PASSED 1
-#define LOAD_FAILED -1
+#define LOAD_FAILED 2
 /*Load Status ?? */
 
 

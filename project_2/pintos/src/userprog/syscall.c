@@ -5,10 +5,37 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-#include "process.h"
 #include "userprog/pagedir.h"
+#include "userprog/process.h"
+
+
 
 #define STACK_LIMIT ((void *) 0x08048000)
+
+
+struct file * get_file(int fd)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e;
+
+  for (e = list_begin (&t->file_list); e != list_end (&t->file_list);
+       e = list_next (e))
+   {
+        struct file_info * fi = list_entry (e, struct file_info, file_elem);
+        if (fd == fi->file_des)
+	    {
+	      return fi->f;
+	    }
+   }
+  
+   return NULL;
+
+}
+struct file * close_file(int fd){
+
+}
+struct file * remove_file(int fd){}
+
 
 
 static void syscall_handler (struct intr_frame *);
@@ -138,20 +165,36 @@ void sys_exit (int status) {
 
   struct thread *cur = thread_current();
   cur->child->exit = true;
+  int s = cur->child->process_status;
+
 
   printf ("%s: exit(%d)\n", cur->name, status);
   thread_exit();
+
+  return s;
 }
 
 pid_t sys_exec (const char *file) {
+
+	validate_page(file);
+	validate_ptr(file);
+
 	int pid = process_execute(file);
-	struct child_proccess * cp =  add_child_to_cur_parent (pid);
+	struct child_process *cp;
+	cp = get_child (pid);
 
 	if (!cp){
-		//printf ( "process_execute failed !!!!\n");
 		sys_exit(-1);
 	}
 
+    if (cp->load_status == LOAD_FAILED)
+    {
+      return -1;
+    }
+	
+    /*while(cp->load_status != LOAD_PASSED){
+    	barrier();
+    }*/
 
 	return pid;
 }
@@ -209,14 +252,23 @@ int sys_filesize (int fd) {
 }
 
 int sys_read (int fd, void *buffer, unsigned size) {
+
+
+
 	return 0; //replace this with something usefull
 }
 
 int sys_write (int fd, const void *buffer, unsigned size) {
+	
 	if( fd == 1){
 		putbuf( buffer, size);
 		return size;
 	}
+
+	lock_acquire(&sys_lock);
+
+
+	lock_release(&sys_lock);
 
 	return 0; //replace this with something usefull
 }

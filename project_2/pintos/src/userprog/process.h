@@ -8,10 +8,12 @@
 
 /*Child_Process Status DEFINES*/
 
-#define C_WAIT 0
-#define C_EXIT 1
-#define UNDEFINED -1
+#define NOT_LOADED 0
+#define LOAD_PASSED 1
+#define LOAD_FAILED -1
 /*Load Status ?? */
+
+
 
 struct child_process
 {
@@ -20,16 +22,12 @@ struct child_process
   bool wait;
   bool exit;
 
+  int process_status;
+
   int load_status;
   struct list_elem child_elem;
   struct lock child_lock;
 };
-
-struct child_process * add_child_to_cur_parent (int pid);
-struct child_process * get_child(int pid);
-void remove_child (struct child_process *cp);
-void remove_all_cur_children (void);
-
 
 
 tid_t process_execute (const char *file_name);
